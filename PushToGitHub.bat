@@ -1,3 +1,0 @@
-@echo off
-echo Running PowerShell script to push to GitHub...
-powershell -ExecutionPolicy Bypass -File "%~dp0RunMe-PushToGitHub.ps1"

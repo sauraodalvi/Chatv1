@@ -56,27 +56,31 @@ The built files will be in the `dist` directory, ready to be deployed to your ho
 
 ## Deployment
 
-### GitHub Pages
+### Vercel (Recommended)
 
-This project is configured for automatic deployment to GitHub Pages using GitHub Actions. When you push to the `main` branch, the site will automatically be built and deployed to GitHub Pages.
+This project is configured for deployment on Vercel, which provides the best experience for React applications.
 
-The live site is available at: https://sauraodalvi.github.io/Chatv1/
+To deploy to Vercel:
 
-To manually deploy to GitHub Pages:
+1. Push your changes to GitHub:
+   ```
+   powershell -ExecutionPolicy Bypass -File setup-github.ps1
+   ```
 
-1. Push your changes to the `main` branch
-2. GitHub Actions will automatically build and deploy the site
-3. Check the Actions tab in the GitHub repository to monitor the deployment progress
+2. Deploy to Vercel:
+   ```
+   powershell -ExecutionPolicy Bypass -File deploy-to-vercel.ps1
+   ```
 
-### Manual Deployment
+Alternatively, you can deploy directly from the Vercel dashboard:
 
-You can also manually deploy the site using the provided script:
+1. Go to [Vercel](https://vercel.com/) and sign up/login with your GitHub account
+2. Click "Add New..." > "Project"
+3. Select your "Chatv1" repository
+4. Vercel will automatically detect it's a React/Vite project
+5. Click "Deploy"
 
-```
-bash deploy-to-github.sh
-```
-
-This script will build the project and push it to the `gh-pages` branch.
+The live site will be available at a URL like: https://chatv1.vercel.app/
 
 ## Project Structure
 

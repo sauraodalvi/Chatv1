@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, Download, Send, Smile, Settings, RefreshCw, UserPlus,
   Sparkles, BookOpen, PenTool, Lightbulb, ChevronRight,
-  Pencil, Zap, Type, Sliders, X, Search, Check, HelpCircle, User, Wand2
+  Pencil, Zap, Type, Sliders, X, Search, Check, HelpCircle, User, Wand2,
+  Compass, Flame, Wind, Droplets, Leaf, Sparkle
 } from 'lucide-react';
 import { generateCharacterResponse, generateCharacterInteraction } from '../utils/chatUtils';
 import { characterLibrary } from '../data/characters';
@@ -13,6 +14,8 @@ import { updateStoryArc, generateWritingInstructions, getScenarioData } from '..
 import { determineNextSpeaker, determineResponders } from '../utils/characterTurnUtils';
 import { shouldTriggerEnvironmentalEvent, generateEnvironmentalEvent } from '../utils/sceneUtils';
 import { generateCharacterFromDescription } from '../utils/aiGenerationUtils';
+import { ModularStoryManager } from '../utils/modularStoryUtils';
+import { NarrativeStateManager } from '../utils/narrativeStateManager';
 import MoodIndicator from './MoodIndicator';
 
 const ChatRoom = ({ chatRoom, chatHistory, setChatHistory, storyArc, setStoryArc, onSaveChat, onLeaveChat, onHowToUse }) => {
@@ -70,6 +73,20 @@ const ChatRoom = ({ chatRoom, chatHistory, setChatHistory, storyArc, setStoryArc
   // What happens next options
   const [nextOptions, setNextOptions] = useState([]);
   const [customNextOption, setCustomNextOption] = useState('');
+
+  // New narrative management systems
+  const [storyManager, setStoryManager] = useState(null);
+  const [narrativeManager, setNarrativeManager] = useState(null);
+  const [showSensoryPanel, setShowSensoryPanel] = useState(false);
+  const [sensoryDescriptions, setSensoryDescriptions] = useState({
+    sight: '',
+    sound: '',
+    smell: '',
+    touch: '',
+    taste: ''
+  });
+  const [storyTension, setStoryTension] = useState(0);
+  const [narrativePhase, setNarrativePhase] = useState('introduction');
 
   const messagesEndRef = useRef(null);
 
@@ -136,8 +153,117 @@ const ChatRoom = ({ chatRoom, chatHistory, setChatHistory, storyArc, setStoryArc
       });
 
       setMoodStates(initialMoodStates);
+
+      // Initialize the ModularStoryManager with the appropriate theme
+      const theme = chatRoom.theme || detectThemeFromPrompt(chatRoom.openingPrompt) || 'fantasy';
+      const newStoryManager = new ModularStoryManager(theme);
+      setStoryManager(newStoryManager);
+
+      // Add characters to the story manager
+      chatRoom.characters.forEach(character => {
+        // Determine character archetype and personality
+        const archetype = determineArchetype(character);
+        const personality = determinePersonality(character);
+
+        newStoryManager.addCharacter(character.name, archetype, personality);
+      });
+
+      // Initialize the NarrativeStateManager
+      const newNarrativeManager = new NarrativeStateManager();
+      setNarrativeManager(newNarrativeManager);
+
+      // Initialize sensory descriptions based on theme
+      updateSensoryDescriptions(newStoryManager);
+
+      // Set initial narrative phase based on story arc
+      if (storyArc) {
+        setNarrativePhase(storyArc.currentPhase || 'introduction');
+        setStoryTension(convertTensionToNumeric(storyArc.currentTension || 'medium'));
+      }
     }
   }, [chatRoom, activeCharacter]);
+
+  // Helper function to detect theme from prompt
+  const detectThemeFromPrompt = (prompt) => {
+    if (!prompt) return 'fantasy';
+
+    const promptLower = prompt.toLowerCase();
+
+    if (promptLower.includes('superhero') || promptLower.includes('hero') ||
+        promptLower.includes('power') || promptLower.includes('villain')) {
+      return 'superhero';
+    }
+
+    if (promptLower.includes('detective') || promptLower.includes('mystery') ||
+        promptLower.includes('crime') || promptLower.includes('case')) {
+      return 'noir';
+    }
+
+    return 'fantasy'; // Default theme
+  };
+
+  // Helper function to determine character archetype
+  const determineArchetype = (character) => {
+    const description = (character.description || '').toLowerCase();
+
+    if (description.includes('hero') || description.includes('protagonist') ||
+        description.includes('brave') || description.includes('noble')) {
+      return 'hero';
+    }
+
+    if (description.includes('villain') || description.includes('antagonist') ||
+        description.includes('evil') || description.includes('dark')) {
+      return 'villain';
+    }
+
+    if (description.includes('wise') || description.includes('mentor') ||
+        description.includes('guide') || description.includes('teacher')) {
+      return 'mentor';
+    }
+
+    return 'hero'; // Default archetype
+  };
+
+  // Helper function to determine character personality
+  const determinePersonality = (character) => {
+    if (!character.personality) return 'balanced';
+
+    const { analytical, emotional, humor } = character.personality;
+
+    if (analytical > 7) return 'stoic';
+    if (emotional > 7) return 'passionate';
+    if (humor > 7) return 'quirky';
+
+    return 'balanced';
+  };
+
+  // Helper function to update sensory descriptions
+  const updateSensoryDescriptions = (manager) => {
+    if (!manager) return;
+
+    const newDescriptions = {
+      sight: manager.getSensoryDescription('sight'),
+      sound: manager.getSensoryDescription('sound'),
+      smell: manager.getSensoryDescription('smell'),
+      touch: manager.getSensoryDescription('touch'),
+      taste: manager.getSensoryDescription('taste')
+    };
+
+    setSensoryDescriptions(newDescriptions);
+  };
+
+  // Helper function to convert tension string to numeric value
+  const convertTensionToNumeric = (tension) => {
+    const tensionMap = {
+      'very low': 1,
+      'low': 3,
+      'medium': 5,
+      'high': 7,
+      'very high': 9
+    };
+
+    return tensionMap[tension] || 5;
+  };
 
   // Toggle add character modal
   const toggleAddCharacter = () => {
@@ -1095,6 +1221,7 @@ const ChatRoom = ({ chatRoom, chatHistory, setChatHistory, storyArc, setStoryArc
     setShowActionMenu(false);
     setShowNarrationInput(false);
     setShowWritingInstructions(false);
+    setShowSensoryPanel(false);
 
     // Determine the scenario type from the chatRoom
     const scenarioType = chatRoom?.theme ||
@@ -1104,24 +1231,101 @@ const ChatRoom = ({ chatRoom, chatHistory, setChatHistory, storyArc, setStoryArc
                          chatRoom?.openingPrompt?.toLowerCase().includes('sci-fi') || chatRoom?.openingPrompt?.toLowerCase().includes('scifi') ? 'scifi' :
                          chatRoom?.openingPrompt?.toLowerCase().includes('horror') ? 'horror' : 'adventure');
 
-    // Generate story branches based on the current conversation context
+    // Generate options using multiple sources for variety
+    let allOptions = [];
+
+    // 1. Use the storyBranchingUtils for context-aware options
     const branchOptions = generateStoryBranches(chatHistory, chatRoom, scenarioType);
+    allOptions = [...branchOptions];
 
-    // Add an environmental event option
+    // 2. Use the ModularStoryManager for theme-specific options
+    if (storyManager) {
+      // Get quick actions based on the current theme
+      const quickActions = storyManager.getQuickActions();
+
+      // Convert quick actions to narrative options
+      const actionOptions = quickActions.map(action => {
+        // Extract recent topics from chat history
+        const recentMessages = chatHistory.slice(-5);
+        const topics = recentMessages
+          .map(msg => msg.message)
+          .join(' ')
+          .match(/\b\w{4,}\b/g) || [];
+
+        // Pick a random topic if available
+        const randomTopic = topics.length > 0
+          ? topics[Math.floor(Math.random() * topics.length)]
+          : '';
+
+        // Create narrative option based on action and theme
+        switch(action.toLowerCase()) {
+          case 'attack':
+          case 'fight':
+            return `A sudden threat appears, forcing everyone to prepare for combat.`;
+          case 'cast spell':
+          case 'use power':
+            return `Magical energy begins to manifest, drawing everyone's attention.`;
+          case 'negotiate':
+          case 'plan':
+            return `An opportunity for a strategic discussion presents itself.`;
+          case 'investigate':
+          case 'question':
+            return `A mysterious clue about ${randomTopic || 'recent events'} is discovered.`;
+          case 'protect':
+            return `Someone or something needs protection from an imminent danger.`;
+          default:
+            return `An opportunity to ${action.toLowerCase()} presents itself.`;
+        }
+      });
+
+      allOptions = [...allOptions, ...actionOptions];
+
+      // Add a sensory-based environmental option
+      const sense = ['sight', 'sound', 'smell'][Math.floor(Math.random() * 3)];
+      const sensoryDesc = storyManager.getSensoryDescription(sense);
+      if (sensoryDesc) {
+        allOptions.push(`${sensoryDesc}, changing the atmosphere of the scene.`);
+      }
+
+      // Add a narration based on current narrative phase
+      const narration = storyManager.getNarration(narrativePhase);
+      if (narration) {
+        allOptions.push(`${narration}.`);
+      }
+    }
+
+    // 3. Add an environmental event option
     const environmentalEvent = generateEnvironmentalEvent(storyArc, chatRoom.characters);
+    allOptions.push(environmentalEvent);
 
-    // Combine options, ensuring we have exactly 3
-    let selectedOptions = [...branchOptions];
+    // 4. Use the NarrativeStateManager for character-specific options
+    if (narrativeManager && chatRoom.characters.length > 0) {
+      // Get a random character
+      const randomChar = chatRoom.characters[Math.floor(Math.random() * chatRoom.characters.length)];
 
-    // If we have more than 3 options, trim to 3
-    if (selectedOptions.length > 3) {
-      selectedOptions = selectedOptions.slice(0, 3);
+      // Create a character-driven option
+      const characterOptions = [
+        `${randomChar.name} reveals an unexpected secret about their past.`,
+        `${randomChar.name} notices something the others have missed.`,
+        `${randomChar.name} suggests a new course of action.`,
+        `${randomChar.name} experiences a sudden change in mood or perspective.`
+      ];
+
+      const randomCharOption = characterOptions[Math.floor(Math.random() * characterOptions.length)];
+      allOptions.push(randomCharOption);
+
+      // Record this as a potential branch point
+      const branchId = `branch_${Date.now()}`;
+      narrativeManager.createBranch(branchId);
     }
 
-    // If we have fewer than 3 options, add the environmental event
-    if (selectedOptions.length < 3) {
-      selectedOptions.push(environmentalEvent);
-    }
+    // Shuffle all options and select 3 unique ones
+    const shuffledOptions = allOptions
+      .sort(() => 0.5 - Math.random())
+      .filter((option, index, self) => self.indexOf(option) === index);
+
+    // Select final options, ensuring we have exactly 3
+    let selectedOptions = shuffledOptions.slice(0, 3);
 
     // If we still have fewer than 3, add generic options
     const genericOptions = [
@@ -1137,12 +1341,40 @@ const ChatRoom = ({ chatRoom, chatHistory, setChatHistory, storyArc, setStoryArc
       }
     }
 
+    // Update sensory descriptions when showing options
+    if (storyManager) {
+      updateSensoryDescriptions(storyManager);
+    }
+
     setNextOptions(selectedOptions);
     setShowNextOptions(true);
   };
 
   // Apply a "What happens next?" option
   const applyNextOption = (option) => {
+    // Record the choice in the narrative state manager
+    if (narrativeManager) {
+      const choiceId = `choice_${Date.now()}`;
+      const intent = determineChoiceIntent(option);
+      narrativeManager.recordChoice(choiceId, option, intent);
+
+      // Update story tension based on the choice
+      if (intent === 'attack' || intent === 'danger') {
+        setStoryTension(prev => Math.min(10, prev + 2));
+      } else if (intent === 'resolve' || intent === 'calm') {
+        setStoryTension(prev => Math.max(1, prev - 1));
+      }
+
+      // Update narrative phase if appropriate
+      if (storyTension > 7 && narrativePhase === 'introduction') {
+        setNarrativePhase('rising');
+      } else if (storyTension > 8 && narrativePhase === 'rising') {
+        setNarrativePhase('climax');
+      } else if (storyTension < 4 && narrativePhase === 'climax') {
+        setNarrativePhase('resolution');
+      }
+    }
+
     // Add the selected option as a narration
     const nextOptionMessage = {
       id: Date.now(),
@@ -1155,18 +1387,63 @@ const ChatRoom = ({ chatRoom, chatHistory, setChatHistory, storyArc, setStoryArc
     setChatHistory([...chatHistory, nextOptionMessage]);
     setShowNextOptions(false);
 
+    // Update sensory descriptions based on the new development
+    if (storyManager) {
+      // Update character emotions in the story manager based on the option
+      chatRoom.characters.forEach(character => {
+        const emotionChange = determineEmotionChange(option, character);
+        if (emotionChange.emotion && emotionChange.value) {
+          storyManager.updateCharacterEmotion(
+            character.name,
+            emotionChange.emotion,
+            emotionChange.value
+          );
+        }
+      });
+
+      // Update sensory descriptions
+      updateSensoryDescriptions(storyManager);
+    }
+
     // Trigger character responses to this new development
     if (autoRespond && chatRoom.characters.length > 0) {
-      // Choose a random character to respond first
-      const respondingCharacter = chatRoom.characters[Math.floor(Math.random() * chatRoom.characters.length)];
+      // Choose the most appropriate character to respond based on the option
+      const respondingCharacter = determineRespondingCharacter(option, chatRoom.characters);
 
       setIsTyping(true);
       setTypingCharacter(respondingCharacter);
 
       setTimeout(() => {
         // Generate a response that acknowledges the new development
-        const response = `*${respondingCharacter.name} reacts to the new development*\n\n${generateCharacterResponse(respondingCharacter, option, chatHistory, writingInstructions, chatRoom, relationships)}`;
+        let response;
 
+        // Use the story manager to generate a character action if available
+        if (storyManager) {
+          const action = storyManager.generateCharacterAction(
+            respondingCharacter.name,
+            "reacts to the new development"
+          );
+
+          if (action) {
+            response = `*${action}*\n\n`;
+          } else {
+            response = `*${respondingCharacter.name} reacts to the new development*\n\n`;
+          }
+        } else {
+          response = `*${respondingCharacter.name} reacts to the new development*\n\n`;
+        }
+
+        // Generate the character's verbal response
+        response += generateCharacterResponse(
+          respondingCharacter,
+          option,
+          chatHistory,
+          writingInstructions,
+          chatRoom,
+          relationships
+        );
+
+        // Add the response to chat history
         setChatHistory(prev => [...prev, {
           id: Date.now() + Math.random(),
           speaker: respondingCharacter.name,
@@ -1180,6 +1457,117 @@ const ChatRoom = ({ chatRoom, chatHistory, setChatHistory, storyArc, setStoryArc
         setTypingCharacter(null);
       }, 1500);
     }
+  };
+
+  // Helper function to determine the intent of a choice
+  const determineChoiceIntent = (option) => {
+    const optionLower = option.toLowerCase();
+
+    if (optionLower.includes('attack') || optionLower.includes('fight') ||
+        optionLower.includes('threat') || optionLower.includes('danger') ||
+        optionLower.includes('combat')) {
+      return 'attack';
+    }
+
+    if (optionLower.includes('magic') || optionLower.includes('spell') ||
+        optionLower.includes('power') || optionLower.includes('energy')) {
+      return 'magic';
+    }
+
+    if (optionLower.includes('talk') || optionLower.includes('negotiate') ||
+        optionLower.includes('discuss') || optionLower.includes('conversation')) {
+      return 'negotiate';
+    }
+
+    if (optionLower.includes('investigate') || optionLower.includes('search') ||
+        optionLower.includes('discover') || optionLower.includes('find')) {
+      return 'explore';
+    }
+
+    if (optionLower.includes('protect') || optionLower.includes('defend') ||
+        optionLower.includes('shield') || optionLower.includes('guard')) {
+      return 'defend';
+    }
+
+    return 'default';
+  };
+
+  // Helper function to determine emotion changes based on an option
+  const determineEmotionChange = (option, character) => {
+    const optionLower = option.toLowerCase();
+    const characterNameLower = character.name.toLowerCase();
+
+    // Check if the option specifically mentions this character
+    const isAboutCharacter = optionLower.includes(characterNameLower);
+
+    // Default emotion change
+    const result = { emotion: null, value: 0 };
+
+    // Determine emotion change based on option content
+    if (optionLower.includes('danger') || optionLower.includes('threat') ||
+        optionLower.includes('attack') || optionLower.includes('fear')) {
+      result.emotion = 'tension';
+      result.value = isAboutCharacter ? 3 : 1;
+    } else if (optionLower.includes('reveal') || optionLower.includes('secret') ||
+               optionLower.includes('discover') || optionLower.includes('learn')) {
+      result.emotion = 'trust';
+      result.value = isAboutCharacter ? 2 : 1;
+    } else if (optionLower.includes('joke') || optionLower.includes('laugh') ||
+               optionLower.includes('funny') || optionLower.includes('amuse')) {
+      result.emotion = 'humor';
+      result.value = 2;
+    }
+
+    return result;
+  };
+
+  // Helper function to determine the most appropriate character to respond
+  const determineRespondingCharacter = (option, characters) => {
+    if (!characters || characters.length === 0) {
+      return null;
+    }
+
+    const optionLower = option.toLowerCase();
+
+    // Check if the option specifically mentions a character
+    for (const character of characters) {
+      if (optionLower.includes(character.name.toLowerCase())) {
+        return character;
+      }
+    }
+
+    // Otherwise, choose based on the type of option
+    if (optionLower.includes('danger') || optionLower.includes('threat') ||
+        optionLower.includes('attack') || optionLower.includes('combat')) {
+      // Find the most combat-oriented character
+      return characters.sort((a, b) => {
+        const aRelevance = (a.personality?.confidence || 5) + (a.personality?.analytical || 5);
+        const bRelevance = (b.personality?.confidence || 5) + (b.personality?.analytical || 5);
+        return bRelevance - aRelevance;
+      })[0];
+    }
+
+    if (optionLower.includes('magic') || optionLower.includes('spell') ||
+        optionLower.includes('mystical') || optionLower.includes('energy')) {
+      // Find the most magical character
+      const magicalCharacter = characters.find(c =>
+        c.type === 'fantasy' ||
+        (c.description && c.description.toLowerCase().includes('magic'))
+      );
+
+      return magicalCharacter || characters[Math.floor(Math.random() * characters.length)];
+    }
+
+    if (optionLower.includes('clue') || optionLower.includes('mystery') ||
+        optionLower.includes('investigate') || optionLower.includes('discover')) {
+      // Find the most analytical character
+      return characters.sort((a, b) => {
+        return (b.personality?.analytical || 5) - (a.personality?.analytical || 5);
+      })[0];
+    }
+
+    // Default to random selection
+    return characters[Math.floor(Math.random() * characters.length)];
   };
 
   // Apply custom "What happens next?" option
@@ -2768,6 +3156,75 @@ const ChatRoom = ({ chatRoom, chatHistory, setChatHistory, storyArc, setStoryArc
             </div>
           )}
 
+          {/* Sensory Panel (conditionally rendered) */}
+          {showSensoryPanel && (
+            <div className="mb-4 p-3 border rounded-md bg-background/80">
+              <h3 className="text-sm font-medium mb-2 flex items-center">
+                <Sparkle className="h-4 w-4 mr-1 text-purple-500" />
+                Scene Sensory Details
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {sensoryDescriptions.sight && (
+                  <div className="flex items-start gap-2 p-2 rounded-md border border-input/50 bg-background/50">
+                    <div className="mt-0.5 text-amber-500">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Sight</div>
+                      <div className="text-sm">{sensoryDescriptions.sight}</div>
+                    </div>
+                  </div>
+                )}
+                {sensoryDescriptions.sound && (
+                  <div className="flex items-start gap-2 p-2 rounded-md border border-input/50 bg-background/50">
+                    <div className="mt-0.5 text-blue-500">
+                      <Wind className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Sound</div>
+                      <div className="text-sm">{sensoryDescriptions.sound}</div>
+                    </div>
+                  </div>
+                )}
+                {sensoryDescriptions.smell && (
+                  <div className="flex items-start gap-2 p-2 rounded-md border border-input/50 bg-background/50">
+                    <div className="mt-0.5 text-green-500">
+                      <Leaf className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Smell</div>
+                      <div className="text-sm">{sensoryDescriptions.smell}</div>
+                    </div>
+                  </div>
+                )}
+                {sensoryDescriptions.touch && (
+                  <div className="flex items-start gap-2 p-2 rounded-md border border-input/50 bg-background/50">
+                    <div className="mt-0.5 text-red-500">
+                      <Flame className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Touch</div>
+                      <div className="text-sm">{sensoryDescriptions.touch}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="mt-3 flex justify-between items-center">
+                <div className="text-xs text-muted-foreground">
+                  Narrative Phase: <span className="font-medium text-foreground capitalize">{narrativePhase}</span>
+                  <span className="mx-2">•</span>
+                  Tension: <span className="font-medium text-foreground">{storyTension}/10</span>
+                </div>
+                <button
+                  onClick={() => setShowSensoryPanel(false)}
+                  className="px-3 py-1 text-xs rounded-md bg-secondary/50 hover:bg-secondary/70"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* What happens next options (conditionally rendered) */}
           {showNextOptions && (
             <div className="mb-4 p-3 border rounded-md bg-background/80">
@@ -3030,23 +3487,143 @@ const ChatRoom = ({ chatRoom, chatHistory, setChatHistory, storyArc, setStoryArc
           </div>
 
           {/* Quick action buttons */}
-          {storyArc && storyArc.theme && (
-            <div className="flex gap-2 mt-2 overflow-x-auto pb-1 scrollbar-hide">
-              {/* Get quick actions from scenario data if available */}
-              {getScenarioQuickActions(storyArc.title, storyArc.theme).map((action, index) => (
-                <button
-                  key={index}
-                  className="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary transition-colors whitespace-nowrap"
-                  onClick={() => {
-                    // Set the message to the action text
-                    setMessage(`*${action}*`);
-                  }}
-                >
-                  {action}
-                </button>
-              ))}
+          {/* Narrative-driven quick actions */}
+          <div className="flex gap-2 mt-2 overflow-x-auto pb-1 scrollbar-hide">
+            {/* Narrative phase indicator */}
+            <div className="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs bg-secondary/30 text-foreground transition-colors whitespace-nowrap">
+              <span className="capitalize">{narrativePhase}</span>
+              <span className="mx-1">•</span>
+              <span>Tension: {storyTension}/10</span>
             </div>
-          )}
+
+            {/* Get quick actions from scenario data if available */}
+            {storyArc && storyArc.theme && getScenarioQuickActions(storyArc.title, storyArc.theme).map((action, index) => (
+              <button
+                key={index}
+                className="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary transition-colors whitespace-nowrap"
+                onClick={() => {
+                  // Set the message to the action text
+                  setMessage(`*${action}*`);
+                }}
+              >
+                {action}
+              </button>
+            ))}
+
+            {/* Add narrative-driven actions based on current phase */}
+            {storyManager && (
+              <>
+                {narrativePhase === 'introduction' && (
+                  <>
+                    <button
+                      className="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-600 transition-colors whitespace-nowrap"
+                      onClick={() => {
+                        const action = "Reveal an important detail about the situation";
+                        applyNextOption(action);
+                      }}
+                    >
+                      <Compass className="h-3.5 w-3.5 mr-1" />
+                      Reveal Detail
+                    </button>
+                    <button
+                      className="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-600 transition-colors whitespace-nowrap"
+                      onClick={() => {
+                        const action = "Introduce a subtle hint of upcoming conflict";
+                        applyNextOption(action);
+                      }}
+                    >
+                      <Wind className="h-3.5 w-3.5 mr-1" />
+                      Foreshadow
+                    </button>
+                  </>
+                )}
+
+                {narrativePhase === 'rising' && (
+                  <>
+                    <button
+                      className="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-600 transition-colors whitespace-nowrap"
+                      onClick={() => {
+                        const action = "Escalate the tension with an unexpected complication";
+                        applyNextOption(action);
+                      }}
+                    >
+                      <Flame className="h-3.5 w-3.5 mr-1" />
+                      Escalate
+                    </button>
+                    <button
+                      className="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-600 transition-colors whitespace-nowrap"
+                      onClick={() => {
+                        const action = "Reveal a character's hidden motivation";
+                        applyNextOption(action);
+                      }}
+                    >
+                      <Sparkle className="h-3.5 w-3.5 mr-1" />
+                      Reveal Motive
+                    </button>
+                  </>
+                )}
+
+                {narrativePhase === 'climax' && (
+                  <>
+                    <button
+                      className="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs bg-red-600/20 hover:bg-red-600/30 text-red-700 transition-colors whitespace-nowrap"
+                      onClick={() => {
+                        const action = "Force a critical decision that will change everything";
+                        applyNextOption(action);
+                      }}
+                    >
+                      <Zap className="h-3.5 w-3.5 mr-1" />
+                      Critical Moment
+                    </button>
+                    <button
+                      className="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs bg-orange-500/20 hover:bg-orange-500/30 text-orange-600 transition-colors whitespace-nowrap"
+                      onClick={() => {
+                        const action = "Reveal a shocking twist that changes the situation";
+                        applyNextOption(action);
+                      }}
+                    >
+                      <Sparkles className="h-3.5 w-3.5 mr-1" />
+                      Plot Twist
+                    </button>
+                  </>
+                )}
+
+                {narrativePhase === 'resolution' && (
+                  <>
+                    <button
+                      className="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs bg-green-500/20 hover:bg-green-500/30 text-green-600 transition-colors whitespace-nowrap"
+                      onClick={() => {
+                        const action = "Begin wrapping up loose story threads";
+                        applyNextOption(action);
+                      }}
+                    >
+                      <Leaf className="h-3.5 w-3.5 mr-1" />
+                      Resolve
+                    </button>
+                    <button
+                      className="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs bg-blue-400/20 hover:bg-blue-400/30 text-blue-500 transition-colors whitespace-nowrap"
+                      onClick={() => {
+                        const action = "Hint at future adventures or unresolved questions";
+                        applyNextOption(action);
+                      }}
+                    >
+                      <Droplets className="h-3.5 w-3.5 mr-1" />
+                      Epilogue
+                    </button>
+                  </>
+                )}
+
+                {/* Always show the scene details button */}
+                <button
+                  className="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs bg-secondary hover:bg-secondary/80 text-foreground transition-colors whitespace-nowrap"
+                  onClick={() => setShowSensoryPanel(!showSensoryPanel)}
+                >
+                  <Sparkle className="h-3.5 w-3.5 mr-1" />
+                  Scene Details
+                </button>
+              </>
+            )}
+          </div>
 
           {/* Tips and scene transition */}
           <div className="flex justify-between items-center mt-1">
@@ -3054,32 +3631,70 @@ const ChatRoom = ({ chatRoom, chatHistory, setChatHistory, storyArc, setStoryArc
               Tip: Use <span className="font-medium">*asterisks*</span> for actions
             </div>
 
-            <button
-              className="inline-flex items-center justify-center rounded-full px-2 py-1 text-xs hover:bg-secondary/20 text-muted-foreground transition-colors"
-              onClick={() => {
-                // Add a random scene transition
-                const transitions = [
-                  "The sun begins to set, casting long shadows across the room.",
-                  "A cool breeze blows through the open window, changing the mood.",
-                  "The atmosphere shifts as time passes...",
-                  "The conversation pauses briefly as everyone reflects on what's been said.",
-                  "The lighting changes subtly, highlighting different aspects of the scene."
-                ];
-                const transition = transitions[Math.floor(Math.random() * transitions.length)];
+            <div className="flex gap-2">
+              <button
+                className="inline-flex items-center justify-center rounded-full px-2 py-1 text-xs hover:bg-secondary/20 text-muted-foreground transition-colors"
+                onClick={() => {
+                  // Add a random scene transition using the story manager if available
+                  let transition;
 
-                setChatHistory([...chatHistory, {
-                  id: Date.now(),
-                  message: transition,
-                  system: true,
-                  isNarration: true,
-                  timestamp: new Date().toISOString()
-                }]);
-              }}
-              title="Add scene transition"
-            >
-              <Sparkles className="h-3.5 w-3.5 mr-1" />
-              <span>Scene Transition</span>
-            </button>
+                  if (storyManager) {
+                    // Get a sensory-based transition
+                    const sense = ['sight', 'sound', 'smell'][Math.floor(Math.random() * 3)];
+                    const sensoryDesc = storyManager.getSensoryDescription(sense);
+
+                    if (sensoryDesc) {
+                      transition = sensoryDesc + ", changing the atmosphere of the scene.";
+                    } else {
+                      transition = storyManager.getNarration(narrativePhase) || "The atmosphere shifts as time passes...";
+                    }
+
+                    // Update sensory descriptions
+                    updateSensoryDescriptions(storyManager);
+                  } else {
+                    // Fallback to default transitions
+                    const transitions = [
+                      "The sun begins to set, casting long shadows across the room.",
+                      "A cool breeze blows through the open window, changing the mood.",
+                      "The atmosphere shifts as time passes...",
+                      "The conversation pauses briefly as everyone reflects on what's been said.",
+                      "The lighting changes subtly, highlighting different aspects of the scene."
+                    ];
+                    transition = transitions[Math.floor(Math.random() * transitions.length)];
+                  }
+
+                  setChatHistory([...chatHistory, {
+                    id: Date.now(),
+                    message: transition,
+                    system: true,
+                    isNarration: true,
+                    timestamp: new Date().toISOString()
+                  }]);
+
+                  // Slightly adjust tension to reflect passage of time
+                  if (Math.random() > 0.7) { // 30% chance
+                    if (narrativePhase === 'introduction' || narrativePhase === 'rising') {
+                      setStoryTension(prev => Math.min(10, prev + 1));
+                    } else {
+                      setStoryTension(prev => Math.max(1, prev - 1));
+                    }
+                  }
+                }}
+                title="Add scene transition"
+              >
+                <Sparkles className="h-3.5 w-3.5 mr-1" />
+                <span>Scene Transition</span>
+              </button>
+
+              <button
+                className="inline-flex items-center justify-center rounded-full px-2 py-1 text-xs hover:bg-secondary/20 text-muted-foreground transition-colors"
+                onClick={() => generateNextOptions()}
+                title="What happens next?"
+              >
+                <Lightbulb className="h-3.5 w-3.5 mr-1" />
+                <span>What Next?</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

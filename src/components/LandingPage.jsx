@@ -1,13 +1,29 @@
-import { useState } from 'react';
-import { useTheme } from './ThemeProvider';
+import { useState } from "react";
+import { useTheme } from "./ThemeProvider";
 import {
-  Moon, Sun, Upload, HelpCircle, Sparkles,
-  MessageSquare, Users, Wand2, Zap,
-  ArrowRight, ShieldCheck, Shield
-} from 'lucide-react';
-import { getScenarioData } from '../utils/storyArcUtils';
+  Moon,
+  Sun,
+  Upload,
+  HelpCircle,
+  Sparkles,
+  MessageSquare,
+  Users,
+  Wand2,
+  Zap,
+  ArrowRight,
+  ShieldCheck,
+  Shield,
+} from "lucide-react";
+import { getScenarioData } from "../utils/storyArcUtils";
 
-const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUploadChat, onHowToUse, onStartChat }) => {
+const LandingPage = ({
+  onSelectCharacter,
+  onCreateScenario,
+  onQuickStart,
+  onUploadChat,
+  onHowToUse,
+  onStartChat,
+}) => {
   const { theme, setTheme } = useTheme();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
@@ -20,8 +36,8 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
           const chatData = JSON.parse(e.target.result);
           onUploadChat(chatData);
         } catch (error) {
-          alert('Invalid chat file. Please upload a valid JSON file.');
-          console.error('Error parsing chat file:', error);
+          alert("Invalid chat file. Please upload a valid JSON file.");
+          console.error("Error parsing chat file:", error);
         }
       };
       reader.readAsText(file);
@@ -49,58 +65,62 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
           name: "Captain America",
           type: "superhero",
           mood: "determined",
-          description: "The first Avenger and a natural leader with unwavering moral principles.",
+          description:
+            "The first Avenger and a natural leader with unwavering moral principles.",
           avatar: "🛡️",
           personality: {
             analytical: 7,
             emotional: 6,
             philosophical: 8,
             humor: 4,
-            confidence: 9
-          }
+            confidence: 9,
+          },
         },
         {
           name: "Iron Man",
           type: "superhero",
           mood: "confident",
-          description: "Genius billionaire Tony Stark with advanced technology and quick wit.",
+          description:
+            "Genius billionaire Tony Stark with advanced technology and quick wit.",
           avatar: "🔴",
           personality: {
             analytical: 10,
             emotional: 5,
             philosophical: 6,
             humor: 9,
-            confidence: 10
-          }
+            confidence: 10,
+          },
         },
         {
           name: "Thor",
           type: "superhero",
           mood: "powerful",
-          description: "The Asgardian God of Thunder with control over lightning and storms.",
+          description:
+            "The Asgardian God of Thunder with control over lightning and storms.",
           avatar: "⚡",
           personality: {
             analytical: 5,
             emotional: 7,
             philosophical: 6,
             humor: 7,
-            confidence: 9
-          }
+            confidence: 9,
+          },
         },
         {
           name: "Hulk",
           type: "superhero",
           mood: "angry",
-          description: "The strongest Avenger with incredible strength fueled by rage.",
+          description:
+            "The strongest Avenger with incredible strength fueled by rage.",
           avatar: "💪",
           personality: {
             analytical: 8, // Banner's intelligence
             emotional: 10,
             philosophical: 4,
             humor: 5,
-            confidence: 8
-          }
-        }
+            confidence: 8,
+          },
+        },
       ];
     } else if (scenarioTitle === "The Lost Artifact") {
       // For the fantasy scenario, use appropriate characters
@@ -109,16 +129,17 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
           name: "Elara Moonwhisper",
           type: "fantasy",
           mood: "mysterious",
-          description: "An elven sorceress with silver hair and eyes that shimmer like moonlight.",
+          description:
+            "An elven sorceress with silver hair and eyes that shimmer like moonlight.",
           avatar: "🧝‍♀️",
           personality: {
             analytical: 7,
             emotional: 6,
             philosophical: 9,
             humor: 4,
-            confidence: 8
-          }
-        }
+            confidence: 8,
+          },
+        },
       ];
     } else if (scenarioTitle === "Space Station Omega") {
       // For the sci-fi scenario, use appropriate characters
@@ -127,16 +148,17 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
           name: "Commander Zax",
           type: "scifi",
           mood: "stern",
-          description: "A battle-hardened space marine with cybernetic enhancements.",
+          description:
+            "A battle-hardened space marine with cybernetic enhancements.",
           avatar: "🤖",
           personality: {
             analytical: 8,
             emotional: 3,
             philosophical: 5,
             humor: 2,
-            confidence: 9
-          }
-        }
+            confidence: 9,
+          },
+        },
       ];
     }
 
@@ -144,7 +166,8 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
     const scenarioPrompt = scenarioData.initialContext || "";
 
     // Set background based on theme
-    let scenarioBackground = "linear-gradient(to right, #3a1c71, #d76d77, #ffaf7b)"; // Default heroic gradient
+    let scenarioBackground =
+      "linear-gradient(to right, #3a1c71, #d76d77, #ffaf7b)"; // Default heroic gradient
 
     if (scenarioData.theme === "fantasy") {
       scenarioBackground = "linear-gradient(to right, #654ea3, #eaafc8)"; // Fantasy gradient
@@ -153,12 +176,233 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
     }
 
     // Start the chat with this scenario and theme
-    onStartChat(scenarioTitle, characters, scenarioPrompt, scenarioBackground, scenarioData.theme);
+    onStartChat(
+      scenarioTitle,
+      characters,
+      scenarioPrompt,
+      scenarioBackground,
+      scenarioData.theme
+    );
+  };
+
+  // Function to start the Avengers join battle scenario
+  const startAvengersJoinBattleScenario = () => {
+    try {
+      console.log("Starting Avengers join battle scenario...");
+      // Get the scenario data
+      const scenarioData = getScenarioData("Avengers join battle");
+      console.log("Scenario data:", scenarioData);
+
+      if (!scenarioData) {
+        console.error("Avengers join battle scenario data not found");
+        // Fallback to the regular Avengers scenario if the join battle one isn't found
+        console.log("Falling back to regular Avengers scenario");
+        startAvengersScenario();
+        return;
+      }
+
+      // Create the Avengers characters
+      const characters = [
+        {
+          name: "Captain America",
+          type: "superhero",
+          mood: "determined",
+          description:
+            "The first Avenger and a natural leader with unwavering moral principles.",
+          avatar: "🛡️",
+          personality: {
+            analytical: 7,
+            emotional: 6,
+            philosophical: 8,
+            humor: 4,
+            confidence: 9,
+          },
+        },
+        {
+          name: "Iron Man",
+          type: "superhero",
+          mood: "confident",
+          description:
+            "Genius billionaire Tony Stark with advanced technology and quick wit.",
+          avatar: "🔴",
+          personality: {
+            analytical: 10,
+            emotional: 5,
+            philosophical: 6,
+            humor: 9,
+            confidence: 10,
+          },
+        },
+        {
+          name: "Thor",
+          type: "superhero",
+          mood: "powerful",
+          description:
+            "The Asgardian God of Thunder with control over lightning and storms.",
+          avatar: "⚡",
+          personality: {
+            analytical: 5,
+            emotional: 7,
+            philosophical: 6,
+            humor: 7,
+            confidence: 9,
+          },
+        },
+        {
+          name: "Hulk",
+          type: "superhero",
+          mood: "angry",
+          description:
+            "The strongest Avenger with incredible strength fueled by rage.",
+          avatar: "💪",
+          personality: {
+            analytical: 8,
+            emotional: 10,
+            philosophical: 4,
+            humor: 5,
+            confidence: 8,
+          },
+        },
+      ];
+
+      // Create the scenario details - use a default prompt if scenarioData.initialContext is undefined
+      let scenarioPrompt =
+        "The Avengers are facing an alien invasion in New York City. You join the team as they fight to protect civilians and defeat the alien threat.";
+
+      // Only try to access scenarioData.initialContext if scenarioData exists
+      if (scenarioData && scenarioData.initialContext) {
+        scenarioPrompt = scenarioData.initialContext;
+      }
+
+      // Set background
+      const scenarioBackground =
+        "linear-gradient(to right, #3a1c71, #d76d77, #ffaf7b)"; // Heroic gradient
+
+      // Start the chat with this scenario
+      console.log("Calling onStartChat with:", {
+        name: "Avengers join battle",
+        charactersCount: characters.length,
+        scenarioPrompt,
+        scenarioBackground,
+        theme: "superhero",
+      });
+
+      onStartChat(
+        "Avengers join battle",
+        characters,
+        scenarioPrompt,
+        scenarioBackground,
+        "superhero"
+      );
+    } catch (error) {
+      console.error("Error starting Avengers join battle scenario:", error);
+      // Fallback to the regular Avengers scenario if there's an error
+      console.log("Error occurred, falling back to regular Avengers scenario");
+      startAvengersScenario();
+    }
   };
 
   // Function to start the Avengers: Alien Invasion scenario
   const startAvengersScenario = () => {
-    startScenario("Avengers: Alien Invasion");
+    console.log("Starting Avengers scenario...");
+    // Get the scenario data
+    const scenarioData = getScenarioData("Avengers: Alien Invasion");
+    console.log("Scenario data:", scenarioData);
+
+    if (!scenarioData) {
+      console.error("Avengers scenario data not found");
+      return;
+    }
+
+    // Create the Avengers characters
+    const characters = [
+      {
+        name: "Captain America",
+        type: "superhero",
+        mood: "determined",
+        description:
+          "The first Avenger and a natural leader with unwavering moral principles.",
+        avatar: "🛡️",
+        personality: {
+          analytical: 7,
+          emotional: 6,
+          philosophical: 8,
+          humor: 4,
+          confidence: 9,
+        },
+      },
+      {
+        name: "Iron Man",
+        type: "superhero",
+        mood: "confident",
+        description:
+          "Genius billionaire Tony Stark with advanced technology and quick wit.",
+        avatar: "🔴",
+        personality: {
+          analytical: 10,
+          emotional: 5,
+          philosophical: 6,
+          humor: 9,
+          confidence: 10,
+        },
+      },
+      {
+        name: "Thor",
+        type: "superhero",
+        mood: "powerful",
+        description:
+          "The Asgardian God of Thunder with control over lightning and storms.",
+        avatar: "⚡",
+        personality: {
+          analytical: 5,
+          emotional: 7,
+          philosophical: 6,
+          humor: 7,
+          confidence: 9,
+        },
+      },
+      {
+        name: "Hulk",
+        type: "superhero",
+        mood: "angry",
+        description:
+          "The strongest Avenger with incredible strength fueled by rage.",
+        avatar: "💪",
+        personality: {
+          analytical: 8,
+          emotional: 10,
+          philosophical: 4,
+          humor: 5,
+          confidence: 8,
+        },
+      },
+    ];
+
+    // Create the scenario details
+    const scenarioPrompt =
+      scenarioData.initialContext ||
+      "The Avengers are facing an alien invasion in New York City. The team must work together to protect civilians and defeat the alien threat.";
+
+    // Set background
+    const scenarioBackground =
+      "linear-gradient(to right, #3a1c71, #d76d77, #ffaf7b)"; // Heroic gradient
+
+    // Start the chat with this scenario
+    console.log("Calling onStartChat with:", {
+      name: "Avengers: Alien Invasion",
+      charactersCount: characters.length,
+      scenarioPrompt,
+      scenarioBackground,
+      theme: "superhero",
+    });
+
+    onStartChat(
+      "Avengers: Alien Invasion",
+      characters,
+      scenarioPrompt,
+      scenarioBackground,
+      "superhero"
+    );
   };
 
   // Features are now defined directly in the JSX
@@ -171,26 +415,38 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
           {/* Main header row */}
           <div className="flex justify-between items-center">
             {/* Logo */}
-          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <div className="bg-primary/10 p-1.5 rounded-md">
-                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">Velora</h1>
+                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
+                  Velora
+                </h1>
               </div>
             </div>
 
             {/* Main navigation - desktop only */}
             <nav className="hidden md:flex items-center space-x-4">
-              <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Features</a>
-              <a href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">How It Works</a>
-            <button
-              onClick={onHowToUse}
+              <a
+                href="#features"
                 className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              Guide
-            </button>
-          </nav>
+              >
+                Features
+              </a>
+              <a
+                href="#how-it-works"
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              >
+                How It Works
+              </a>
+              <button
+                onClick={onHowToUse}
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              >
+                Guide
+              </button>
+            </nav>
 
             {/* Action buttons and theme toggle */}
-          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               {/* Mobile menu buttons */}
               <button
                 onClick={onQuickStart}
@@ -210,26 +466,34 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                 <span className="sr-only">Upload Saved Chat</span>
               </button>
 
-            <button
-              onClick={onHowToUse}
+              <button
+                onClick={onHowToUse}
                 className="p-2 rounded-full hover:bg-secondary/80 flex items-center justify-center md:hidden"
-              title="How to Use Velora"
-            >
+                title="How to Use Velora"
+              >
                 <HelpCircle className="h-4 w-4" />
-              <span className="sr-only">How to Use</span>
-            </button>
+                <span className="sr-only">How to Use</span>
+              </button>
 
               {/* Theme toggle */}
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 rounded-full bg-secondary/80"
-              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              <span className="sr-only">Toggle theme</span>
-            </button>
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="p-2 rounded-full bg-secondary/80"
+                title={
+                  theme === "dark"
+                    ? "Switch to Light Mode"
+                    : "Switch to Dark Mode"
+                }
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+                <span className="sr-only">Toggle theme</span>
+              </button>
+            </div>
           </div>
-        </div>
 
           {/* Action buttons row - desktop only */}
           <div className="hidden md:flex items-center justify-between mt-2 pb-1">
@@ -237,7 +501,7 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
               Create immersive AI adventures in seconds
             </div>
 
-                <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               {/* Quick start button */}
               <button
                 onClick={onQuickStart}
@@ -294,14 +558,18 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
               </div>
 
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-                Immersive AI Characters in <span className="relative">
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">Living Worlds</span>
+                Immersive AI Characters in{" "}
+                <span className="relative">
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
+                    Living Worlds
+                  </span>
                   <span className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 to-purple-600/50 rounded-full"></span>
                 </span>
               </h1>
 
               <p className="text-muted-foreground max-w-[500px] mx-auto lg:mx-0">
-                Create immersive adventures with AI characters that remember context and respond naturally to your actions.
+                Create immersive adventures with AI characters that remember
+                context and respond naturally to your actions.
               </p>
 
               {/* Primary CTA with social proof */}
@@ -321,7 +589,7 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                     <Users className="h-5 w-5 mr-2 text-primary" />
                     Browse Characters
                   </button>
-          </div>
+                </div>
 
                 {/* Social proof */}
                 <div className="flex items-center justify-center lg:justify-start gap-2 text-xs text-muted-foreground">
@@ -333,7 +601,7 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                   <span>Join 1000+ users creating adventures daily</span>
                 </div>
               </div>
-          </div>
+            </div>
 
             {/* Right column: Interactive preview */}
             <div className="lg:w-7/12 relative">
@@ -345,7 +613,9 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                       <Shield className="h-4 w-4 text-red-500" />
                     </div>
                     <div>
-                      <span className="font-medium">Avengers: Alien Invasion</span>
+                      <span className="font-medium">
+                        Avengers: Alien Invasion
+                      </span>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <div className="flex -space-x-1">
                           <div className="w-4 h-4 rounded-full bg-red-500/30 border border-background"></div>
@@ -370,32 +640,57 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                 {/* Chat messages - Avengers battle scenario */}
                 <div className="p-4 flex flex-col gap-3 max-h-[250px] overflow-hidden relative bg-gradient-to-br from-background/30 to-background/10">
                   <div className="flex gap-2 items-start max-w-[80%]">
-                    <div className="w-8 h-8 rounded-full bg-red-500/30 flex-shrink-0 border border-red-500/20 shadow-sm flex items-center justify-center text-xs">🛡️</div>
+                    <div className="w-8 h-8 rounded-full bg-red-500/30 flex-shrink-0 border border-red-500/20 shadow-sm flex items-center justify-center text-xs">
+                      🛡️
+                    </div>
                     <div className="bg-background/60 backdrop-blur-sm p-2.5 rounded-lg rounded-tl-none shadow-sm border border-primary/10">
-                      <p className="text-xs text-primary/80 font-medium mb-0.5">Captain America</p>
-                      <p className="text-sm">Thor! We need your lightning on the east flank! These aliens are breaking through our defenses!</p>
+                      <p className="text-xs text-primary/80 font-medium mb-0.5">
+                        Captain America
+                      </p>
+                      <p className="text-sm">
+                        Thor! We need your lightning on the east flank! These
+                        aliens are breaking through our defenses!
+                      </p>
                     </div>
                   </div>
 
                   <div className="flex gap-2 items-start max-w-[80%] self-end">
                     <div className="bg-primary/90 p-2.5 rounded-lg rounded-tr-none text-primary-foreground shadow-md">
-                      <p className="text-sm">*raises Mjolnir* These creatures shall feel the wrath of Asgard! *summons lightning* Stand back, my friends!</p>
+                      <p className="text-sm">
+                        *raises Mjolnir* These creatures shall feel the wrath of
+                        Asgard! *summons lightning* Stand back, my friends!
+                      </p>
                     </div>
                   </div>
 
                   <div className="flex gap-2 items-start max-w-[80%]">
-                    <div className="w-8 h-8 rounded-full bg-green-500/30 flex-shrink-0 border border-green-500/20 shadow-sm flex items-center justify-center text-xs">💪</div>
+                    <div className="w-8 h-8 rounded-full bg-green-500/30 flex-shrink-0 border border-green-500/20 shadow-sm flex items-center justify-center text-xs">
+                      💪
+                    </div>
                     <div className="bg-background/60 backdrop-blur-sm p-2.5 rounded-lg rounded-tl-none shadow-sm border border-primary/10">
-                      <p className="text-xs text-primary/80 font-medium mb-0.5">Hulk</p>
-                      <p className="text-sm">HULK SMASH ALIENS! *leaps into a group of enemies, creating a shockwave* PUNY SPACE MONSTERS!</p>
+                      <p className="text-xs text-primary/80 font-medium mb-0.5">
+                        Hulk
+                      </p>
+                      <p className="text-sm">
+                        HULK SMASH ALIENS! *leaps into a group of enemies,
+                        creating a shockwave* PUNY SPACE MONSTERS!
+                      </p>
                     </div>
                   </div>
 
                   <div className="flex gap-2 items-start max-w-[80%]">
-                    <div className="w-8 h-8 rounded-full bg-red-500/40 flex-shrink-0 border border-red-500/20 shadow-sm flex items-center justify-center text-xs">🔴</div>
+                    <div className="w-8 h-8 rounded-full bg-red-500/40 flex-shrink-0 border border-red-500/20 shadow-sm flex items-center justify-center text-xs">
+                      🔴
+                    </div>
                     <div className="bg-background/60 backdrop-blur-sm p-2.5 rounded-lg rounded-tl-none shadow-sm border border-primary/10">
-                      <p className="text-xs text-primary/80 font-medium mb-0.5">Iron Man</p>
-                      <p className="text-sm">I'm detecting a mothership above the city. Thor, think you can give me a boost with that lightning? Let's take this fight to them!</p>
+                      <p className="text-xs text-primary/80 font-medium mb-0.5">
+                        Iron Man
+                      </p>
+                      <p className="text-sm">
+                        I'm detecting a mothership above the city. Thor, think
+                        you can give me a boost with that lightning? Let's take
+                        this fight to them!
+                      </p>
                     </div>
                   </div>
 
@@ -407,25 +702,42 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                   <div className="flex gap-2 items-center">
                     <div
                       className="flex-1 bg-background/80 rounded-lg border border-primary/20 p-2 text-sm text-muted-foreground cursor-pointer hover:border-primary/50 transition-colors"
-                      onClick={() => startAvengersScenario()}
+                      onClick={() => startAvengersJoinBattleScenario()}
                     >
                       Type your message as Thor...
                     </div>
                     <button
                       className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-md hover:bg-primary/90 transition-colors"
-                      onClick={() => startAvengersScenario()}
+                      onClick={() => startAvengersJoinBattleScenario()}
                     >
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
                   <div className="flex justify-between mt-2 px-1">
                     <div className="flex gap-2 text-xs text-muted-foreground">
-                      <span className="flex items-center"><ShieldCheck className="h-3 w-3 mr-1" /> Private</span>
-                      <span className="flex items-center"><Sparkles className="h-3 w-3 mr-1" /> AI-Powered</span>
+                      <span className="flex items-center">
+                        <ShieldCheck className="h-3 w-3 mr-1" /> Private
+                      </span>
+                      <span className="flex items-center">
+                        <Sparkles className="h-3 w-3 mr-1" /> AI-Powered
+                      </span>
                     </div>
                     <button
-                      className="text-xs text-primary hover:underline"
-                      onClick={() => startAvengersScenario()}
+                      className="text-xs text-primary hover:underline font-medium"
+                      onClick={() => {
+                        console.log("Join the battle button clicked");
+                        try {
+                          startAvengersJoinBattleScenario();
+                          console.log(
+                            "startAvengersJoinBattleScenario completed successfully"
+                          );
+                        } catch (error) {
+                          console.error(
+                            "Error in startAvengersJoinBattleScenario:",
+                            error
+                          );
+                        }
+                      }}
                     >
                       Join the battle →
                     </button>
@@ -438,7 +750,10 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
       </section>
 
       {/* Combined Get Started & How It Works section */}
-      <section id="how-it-works" className="py-14 relative overflow-hidden bg-gradient-to-b from-background to-secondary/5">
+      <section
+        id="how-it-works"
+        className="py-14 relative overflow-hidden bg-gradient-to-b from-background to-secondary/5"
+      >
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
 
         <div className="container px-4 md:px-6 relative z-10">
@@ -463,10 +778,13 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                 <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors flex-shrink-0">
                   <span className="font-bold text-primary">1</span>
                 </div>
-                <h3 className="text-lg font-bold group-hover:text-primary transition-colors">Choose Characters</h3>
+                <h3 className="text-lg font-bold group-hover:text-primary transition-colors">
+                  Choose Characters
+                </h3>
               </div>
               <p className="text-sm text-muted-foreground mb-3">
-                Select from our library of AI personalities or create custom characters with unique traits.
+                Select from our library of AI personalities or create custom
+                characters with unique traits.
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex -space-x-2">
@@ -489,10 +807,13 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                 <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors flex-shrink-0">
                   <span className="font-bold text-primary">2</span>
                 </div>
-                <h3 className="text-lg font-bold group-hover:text-primary transition-colors">Select Scenario</h3>
+                <h3 className="text-lg font-bold group-hover:text-primary transition-colors">
+                  Select Scenario
+                </h3>
               </div>
               <p className="text-sm text-muted-foreground mb-3">
-                Choose a pre-made scenario or describe your own setting for AI to generate a rich world.
+                Choose a pre-made scenario or describe your own setting for AI
+                to generate a rich world.
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -524,10 +845,13 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                 <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors flex-shrink-0">
                   <span className="font-bold text-primary">3</span>
                 </div>
-                <h3 className="text-lg font-bold group-hover:text-primary transition-colors">Start Chatting</h3>
+                <h3 className="text-lg font-bold group-hover:text-primary transition-colors">
+                  Start Chatting
+                </h3>
               </div>
               <p className="text-sm text-muted-foreground mb-3">
-                Engage in dynamic conversations with AI characters that remember context and respond naturally.
+                Engage in dynamic conversations with AI characters that remember
+                context and respond naturally.
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -596,9 +920,14 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                   <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors flex-shrink-0">
                     <MessageSquare className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-lg font-bold group-hover:text-primary transition-colors">Dynamic Conversations</h3>
+                  <h3 className="text-lg font-bold group-hover:text-primary transition-colors">
+                    Dynamic Conversations
+                  </h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-3">Context-aware, memory-rich replies that evolve with your interactions.</p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Context-aware, memory-rich replies that evolve with your
+                  interactions.
+                </p>
               </div>
             </div>
 
@@ -610,9 +939,14 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                   <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors flex-shrink-0">
                     <Wand2 className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-lg font-bold group-hover:text-primary transition-colors">AI-Generated Worlds</h3>
+                  <h3 className="text-lg font-bold group-hover:text-primary transition-colors">
+                    AI-Generated Worlds
+                  </h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-3">Describe your ideal scenario in a few words and watch as AI creates a rich, detailed world.</p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Describe your ideal scenario in a few words and watch as AI
+                  creates a rich, detailed world.
+                </p>
               </div>
             </div>
 
@@ -624,9 +958,14 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                   <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors flex-shrink-0">
                     <Sparkles className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-lg font-bold group-hover:text-primary transition-colors">No Login Required</h3>
+                  <h3 className="text-lg font-bold group-hover:text-primary transition-colors">
+                    No Login Required
+                  </h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-3">Jump right in without creating an account. Your chats can be saved locally for privacy.</p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Jump right in without creating an account. Your chats can be
+                  saved locally for privacy.
+                </p>
               </div>
             </div>
           </div>
@@ -655,7 +994,8 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                   </h2>
 
                   <p className="text-sm text-muted-foreground mb-4">
-                    Join thousands of users creating immersive AI adventures with characters that remember context and respond naturally.
+                    Join thousands of users creating immersive AI adventures
+                    with characters that remember context and respond naturally.
                   </p>
 
                   {/* Social proof */}
@@ -699,8 +1039,8 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
                       <Wand2 className="h-3.5 w-3.5 mr-1.5 text-primary" />
                       Create Scenario
                     </button>
-            </div>
-            </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -714,26 +1054,45 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
             {/* Logo and theme toggle */}
             <div className="flex items-center gap-2">
               <div className="bg-primary/10 p-1 rounded-md">
-                <h2 className="text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">Velora</h2>
+                <h2 className="text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
+                  Velora
+                </h2>
               </div>
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
-                title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                title={
+                  theme === "dark"
+                    ? "Switch to Light Mode"
+                    : "Switch to Dark Mode"
+                }
               >
-                {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                {theme === "dark" ? (
+                  <Sun className="h-3.5 w-3.5" />
+                ) : (
+                  <Moon className="h-3.5 w-3.5" />
+                )}
               </button>
             </div>
 
             {/* Navigation links */}
             <div className="flex items-center gap-4">
-              <a href="#features" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+              <a
+                href="#features"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
                 Features
               </a>
-              <a href="#how-it-works" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+              <a
+                href="#how-it-works"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
                 How It Works
               </a>
-              <button onClick={onHowToUse} className="text-xs text-muted-foreground hover:text-primary transition-colors">
+              <button
+                onClick={onHowToUse}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
                 Guide
               </button>
             </div>
@@ -741,12 +1100,20 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
 
           {/* Copyright */}
           <div className="border-t border-primary/10 mt-4 pt-4 flex flex-wrap justify-between items-center">
-            <p className="text-xs text-muted-foreground">
-              &copy; 2024 Velora
-            </p>
+            <p className="text-xs text-muted-foreground">&copy; 2024 Velora</p>
             <div className="flex items-center gap-3">
-              <a href="#" className="text-xs text-muted-foreground hover:text-primary transition-colors">Privacy</a>
-              <a href="#" className="text-xs text-muted-foreground hover:text-primary transition-colors">Terms</a>
+              <a
+                href="#"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                Privacy
+              </a>
+              <a
+                href="#"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                Terms
+              </a>
             </div>
           </div>
         </div>
@@ -761,7 +1128,20 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
               onClick={() => setIsUploadModalOpen(false)}
               className="absolute top-4 right-4 w-8 h-8 rounded-full bg-background/80 flex items-center justify-center border border-primary/20 text-muted-foreground hover:text-primary transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
               <span className="sr-only">Close</span>
             </button>
 
@@ -773,8 +1153,9 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
               </div>
               <h2 className="text-2xl font-bold mb-2">Upload Saved Chat</h2>
               <p className="text-muted-foreground">
-              Select a previously saved chat file (JSON) to continue your conversation.
-            </p>
+                Select a previously saved chat file (JSON) to continue your
+                conversation.
+              </p>
             </div>
 
             {/* Upload area */}
@@ -782,7 +1163,9 @@ const LandingPage = ({ onSelectCharacter, onCreateScenario, onQuickStart, onUplo
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                 <Upload className="h-6 w-6 text-primary" />
               </div>
-              <p className="text-sm text-muted-foreground mb-4">Drag and drop your chat file here, or click to browse</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Drag and drop your chat file here, or click to browse
+              </p>
               <input
                 type="file"
                 accept=".json"

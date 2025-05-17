@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTheme } from "./ThemeProvider";
 import {
   ArrowLeft,
   Download,
@@ -32,6 +33,8 @@ import {
   Users,
   ArrowRight,
   ChevronLeft,
+  Sun,
+  Moon,
 } from "lucide-react";
 import Chip from "./ui/Chip";
 import CharacterAvatar from "./CharacterAvatar";
@@ -96,6 +99,7 @@ const ChatRoom = ({
   onLeaveChat,
   onHowToUse,
 }) => {
+  const { theme, setTheme } = useTheme();
   const [message, setMessage] = useState("");
   const [activeCharacter, setActiveCharacter] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
@@ -3526,6 +3530,43 @@ const ChatRoom = ({
     }
   };
 
+  // Handle global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Close panels with Escape key
+      if (e.key === "Escape") {
+        if (showNextOptions) {
+          setShowNextOptions(false);
+          return;
+        }
+        if (showSensoryPanel) {
+          setShowSensoryPanel(false);
+          return;
+        }
+      }
+
+      // Toggle "What Next?" panel with Alt+W
+      if (e.altKey && e.key === "w") {
+        generateNextOptions();
+        return;
+      }
+
+      // Toggle Scene Details panel with Alt+S
+      if (e.altKey && e.key === "s") {
+        setShowSensoryPanel(!showSensoryPanel);
+        return;
+      }
+    };
+
+    // Add event listener
+    document.addEventListener("keydown", handleKeyDown);
+
+    // Clean up
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showNextOptions, showSensoryPanel]);
+
   const handleSendMessage = () => {
     if (!message.trim() || !activeCharacter) return;
 
@@ -4001,6 +4042,21 @@ const ChatRoom = ({
             </h1>
           </div>
           <div className="flex gap-1 md:gap-2">
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
+              title={
+                theme === "dark"
+                  ? "Switch to Light Mode"
+                  : "Switch to Dark Mode"
+              }
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4 md:h-5 md:w-5" />
+              ) : (
+                <Moon className="h-4 w-4 md:h-5 md:w-5" />
+              )}
+            </button>
             <button
               onClick={onHowToUse}
               className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
@@ -5566,11 +5622,20 @@ const ChatRoom = ({
 
           {/* Sensory Panel (conditionally rendered) */}
           {showSensoryPanel && (
-            <div className="mb-4 p-3 border rounded-md bg-background/80">
-              <h3 className="text-sm font-medium mb-3 flex items-center">
-                <Sparkle className="h-4 w-4 mr-1 text-purple-500" />
-                Scene Sensory Details
-              </h3>
+            <div className="mb-4 p-3 border rounded-md bg-background/80 backdrop-blur-sm shadow-md transition-all duration-300 ease-in-out">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-medium flex items-center">
+                  <Sparkle className="h-4 w-4 mr-1 text-purple-500" />
+                  Scene Sensory Details
+                </h3>
+                <button
+                  onClick={() => setShowSensoryPanel(false)}
+                  className="p-1 rounded-full hover:bg-secondary/50 transition-colors"
+                  title="Close panel"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
               {/* Sensory details as chips */}
               <div className="flex flex-wrap gap-2 mb-3">
@@ -5655,25 +5720,46 @@ const ChatRoom = ({
                 )}
               </div>
 
-              <div className="mt-3 flex justify-end">
-                <Chip
-                  variant="default"
-                  size="sm"
-                  onClick={() => setShowSensoryPanel(false)}
-                >
-                  Close
-                </Chip>
+              <div className="mt-3">
+                <div className="flex justify-end mb-2">
+                  <Chip
+                    variant="default"
+                    size="sm"
+                    onClick={() => setShowSensoryPanel(false)}
+                  >
+                    Close
+                  </Chip>
+                </div>
+                <div className="text-xs text-muted-foreground flex items-center gap-1 flex-wrap justify-center">
+                  <kbd className="px-1.5 py-0.5 bg-secondary/50 rounded text-[10px] font-mono">
+                    Alt+S
+                  </kbd>
+                  <span>to toggle this panel •</span>
+                  <kbd className="px-1.5 py-0.5 bg-secondary/50 rounded text-[10px] font-mono">
+                    Esc
+                  </kbd>
+                  <span>to close</span>
+                </div>
               </div>
             </div>
           )}
 
           {/* What happens next options (conditionally rendered) */}
           {showNextOptions && (
-            <div className="mb-4 p-3 border rounded-md bg-background/80">
-              <h3 className="text-sm font-medium mb-2 flex items-center">
-                <Lightbulb className="h-4 w-4 mr-1 text-amber-500" />
-                What happens next?
-              </h3>
+            <div className="mb-4 p-3 border rounded-md bg-background/80 backdrop-blur-sm shadow-md transition-all duration-300 ease-in-out">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium flex items-center">
+                  <Lightbulb className="h-4 w-4 mr-1 text-amber-500" />
+                  What happens next?
+                </h3>
+                <button
+                  onClick={() => setShowNextOptions(false)}
+                  className="p-1 rounded-full hover:bg-secondary/50 transition-colors"
+                  title="Close panel"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
               <div className="space-y-2 mb-3">
                 {nextOptions.map((option, index) => {
                   // Check if this is a battle option
@@ -5762,8 +5848,20 @@ const ChatRoom = ({
                 </button>
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
-                These suggestions will be added as narration and characters will
-                respond to them.
+                <div>
+                  These suggestions will be added as narration and characters
+                  will respond to them.
+                </div>
+                <div className="mt-1 flex items-center gap-1 flex-wrap">
+                  <kbd className="px-1.5 py-0.5 bg-secondary/50 rounded text-[10px] font-mono">
+                    Alt+W
+                  </kbd>
+                  <span>to toggle this panel •</span>
+                  <kbd className="px-1.5 py-0.5 bg-secondary/50 rounded text-[10px] font-mono">
+                    Esc
+                  </kbd>
+                  <span>to close</span>
+                </div>
               </div>
             </div>
           )}

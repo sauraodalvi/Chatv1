@@ -4463,46 +4463,47 @@ const ChatRoom = ({
                       msg.edited ? "border-l-2 border-amber-500 relative" : ""
                     }`}
                   >
-                    {/* Show speaker name for non-user messages and for "Yourself" messages */}
-                    {(!msg.isUser ||
-                      (msg.isUser && msg.speaker === "Yourself")) &&
-                      !msg.system &&
-                      !msg.isAction && (
-                        <div className="font-bold mb-1 flex justify-between items-center">
-                          <div className="flex items-center gap-1.5">
-                            <span>{msg.speaker}</span>
-                            {msg.character && (
-                              <MoodIndicator
-                                mood={
-                                  getMoodState(
-                                    moodStates,
-                                    msg.speaker,
-                                    msg.character
-                                  )?.currentMood || msg.character.mood
-                                }
-                                intensity={
-                                  getMoodState(
-                                    moodStates,
-                                    msg.speaker,
-                                    msg.character
-                                  )?.intensity || 5
-                                }
-                                size="sm"
-                              />
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {msg.edited && (
-                              <span className="text-xs text-amber-500 italic">
-                                (edited)
-                              </span>
-                            )}
-                            <span className="text-xs text-muted-foreground">
-                              {formatTime(msg.timestamp)}
-                            </span>
-                          </div>
+                    {/* Show speaker name for all messages except system messages and actions */}
+                    {!msg.system && !msg.isAction && (
+                      <div className="font-bold mb-1 flex justify-between items-center">
+                        <div className="flex items-center gap-1.5">
+                          <span>
+                            {msg.isUser && msg.speaker !== "Yourself"
+                              ? "YOU"
+                              : msg.speaker}
+                          </span>
+                          {msg.character && (
+                            <MoodIndicator
+                              mood={
+                                getMoodState(
+                                  moodStates,
+                                  msg.speaker,
+                                  msg.character
+                                )?.currentMood || msg.character.mood
+                              }
+                              intensity={
+                                getMoodState(
+                                  moodStates,
+                                  msg.speaker,
+                                  msg.character
+                                )?.intensity || 5
+                              }
+                              size="sm"
+                            />
+                          )}
                         </div>
-                      )}
+                        <div className="flex items-center gap-2">
+                          {msg.edited && (
+                            <span className="text-xs text-amber-500 italic">
+                              (edited)
+                            </span>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {formatTime(msg.timestamp)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     <div className="whitespace-pre-wrap">
                       {/* Parse message for scene descriptions (text between asterisks) */}
                       {msg.message.includes("*") ? (
@@ -6355,78 +6356,7 @@ const ChatRoom = ({
               actions
             </div>
 
-            <div className="flex gap-2">
-              <Chip
-                variant="default"
-                size="sm"
-                icon={<Sparkles className="h-3.5 w-3.5" />}
-                onClick={() => {
-                  // Add a random scene transition using the story manager if available
-                  let transition;
-
-                  if (storyManager) {
-                    // Get a sensory-based transition
-                    const sense = ["sight", "sound", "smell"][
-                      Math.floor(Math.random() * 3)
-                    ];
-                    const sensoryDesc =
-                      storyManager.getSensoryDescription(sense);
-
-                    if (sensoryDesc) {
-                      transition =
-                        sensoryDesc + ", changing the atmosphere of the scene.";
-                    } else {
-                      transition =
-                        storyManager.getNarration(narrativePhase) ||
-                        "The atmosphere shifts as time passes...";
-                    }
-
-                    // Update sensory descriptions
-                    updateSensoryDescriptions(storyManager);
-                  } else {
-                    // Fallback to default transitions
-                    const transitions = [
-                      "The sun begins to set, casting long shadows across the room.",
-                      "A cool breeze blows through the open window, changing the mood.",
-                      "The atmosphere shifts as time passes...",
-                      "The conversation pauses briefly as everyone reflects on what's been said.",
-                      "The lighting changes subtly, highlighting different aspects of the scene.",
-                    ];
-                    transition =
-                      transitions[
-                        Math.floor(Math.random() * transitions.length)
-                      ];
-                  }
-
-                  setChatHistory([
-                    ...chatHistory,
-                    {
-                      id: Date.now(),
-                      message: transition,
-                      system: true,
-                      isNarration: true,
-                      timestamp: new Date().toISOString(),
-                    },
-                  ]);
-
-                  // Slightly adjust tension to reflect passage of time
-                  if (Math.random() > 0.7) {
-                    // 30% chance
-                    if (
-                      narrativePhase === "introduction" ||
-                      narrativePhase === "rising"
-                    ) {
-                      setStoryTension((prev) => Math.min(10, prev + 1));
-                    } else {
-                      setStoryTension((prev) => Math.max(1, prev - 1));
-                    }
-                  }
-                }}
-                title="Add scene transition"
-              >
-                Scene Transition
-              </Chip>
-
+            <div className="flex justify-end">
               <Chip
                 variant="default"
                 size="sm"

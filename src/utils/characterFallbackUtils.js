@@ -545,19 +545,68 @@ const getTypeFallback = (character, context, lastMessage) => {
     }
   }
 
-  // Default fallback based on personality
+  // Default fallback based on personality with more variety
   const isAnalytical = personality.analytical > 6;
   const isEmotional = personality.emotional > 6;
   const isHumorous = personality.humor > 6;
+  const isPhilosophical = personality.philosophical > 6;
+  const isConfident = personality.confidence > 6;
 
+  // Use a random selection from multiple options to avoid repetition
   if (isAnalytical) {
-    return "I need to analyze this situation more carefully before responding.";
+    const options = [
+      "Let me think through this logically for a moment.",
+      "This requires careful analysis. Let me consider the facts.",
+      "I'm examining the different angles of this situation.",
+      "There are several factors to consider here. Give me a moment.",
+      "I'm processing the information to form a reasoned response.",
+    ];
+    return options[Math.floor(Math.random() * options.length)];
   } else if (isEmotional) {
-    return "I feel strongly about this, but I need a moment to gather my thoughts.";
+    const options = [
+      "This touches on something important to me. Let me express my thoughts clearly.",
+      "I have strong feelings about this that I want to articulate properly.",
+      "This resonates with me on an emotional level.",
+      "I want to make sure I express my genuine feelings about this.",
+      "This matters to me, and I want to respond thoughtfully.",
+    ];
+    return options[Math.floor(Math.random() * options.length)];
   } else if (isHumorous) {
-    return "Well, this is one of those moments where even I'm at a loss for words. Give me a second.";
+    const options = [
+      "Well, you've got me there! Let me think of something clever to say.",
+      "Hmm, usually I'd have a joke ready, but you've caught me off guard!",
+      "I'm usually quicker with the comebacks. Give me a second to think of something good.",
+      "Even comedians need a moment to find the right punchline sometimes!",
+      "I'm mentally flipping through my joke book for the perfect response.",
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+  } else if (isPhilosophical) {
+    const options = [
+      "That raises some interesting philosophical questions worth exploring.",
+      "I find myself contemplating the deeper implications of what you've said.",
+      "There's more beneath the surface here that deserves reflection.",
+      "This touches on fundamental questions about our experience.",
+      "I'm considering how this relates to broader patterns and meanings.",
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+  } else if (isConfident) {
+    const options = [
+      "I have some definite thoughts on this matter.",
+      "Let me be clear about where I stand on this.",
+      "I'm confident in my perspective here.",
+      "I know exactly what I think about this.",
+      "Allow me to share my position on this matter.",
+    ];
+    return options[Math.floor(Math.random() * options.length)];
   }
 
-  // Final generic fallback
-  return "I'm considering how best to respond to this situation.";
+  // Final generic fallback with variety
+  const genericOptions = [
+    "I'm considering how best to respond to this situation.",
+    "Let me gather my thoughts for a moment.",
+    "That's an interesting point to consider.",
+    "I'm thinking about the best way to address this.",
+    "Give me a moment to formulate my response.",
+  ];
+  return genericOptions[Math.floor(Math.random() * genericOptions.length)];
 };

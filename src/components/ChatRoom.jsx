@@ -1578,6 +1578,105 @@ const ChatRoom = ({
       setWaitingForUserInput(false);
     }
 
+    // Handle auto-selection for the best character to speak next
+    if (character === "auto") {
+      console.log("Auto-selecting best character to speak next");
+
+      // Get the last message from the chat history
+      const lastMessage =
+        chatHistory.length > 0 ? chatHistory[chatHistory.length - 1] : null;
+
+      // Determine if we're in a one-on-one chat (only one AI character)
+      const isOneOnOneChat = chatRoom.characters.length === 1;
+
+      if (isOneOnOneChat) {
+        // In one-on-one chats, always select the only AI character
+        character = chatRoom.characters[0];
+        console.log(
+          "One-on-one chat detected, selected character:",
+          character.name
+        );
+      } else {
+        // In group chats, use the turn tracker to determine who should speak next
+        if (lastMessage) {
+          // Check if we're in a battle scenario
+          const isBattleScenario = detectBattleScenario(chatRoom, chatHistory);
+
+          // Update battle state if needed
+          if (isBattleScenario) {
+            // Count battle keywords in recent messages to determine intensity
+            const recentMessages = chatHistory.slice(-10);
+            let battleKeywordCount = 0;
+            const battleKeywords = [
+              "battle",
+              "fight",
+              "attack",
+              "defend",
+              "enemy",
+              "weapon",
+              "combat",
+              "shield",
+              "sword",
+              "gun",
+              "blast",
+              "explosion",
+              "danger",
+              "threat",
+            ];
+
+            recentMessages.forEach((msg) => {
+              if (msg.message) {
+                battleKeywords.forEach((keyword) => {
+                  if (msg.message.toLowerCase().includes(keyword)) {
+                    battleKeywordCount++;
+                  }
+                });
+              }
+            });
+
+            // Update battle intensity (0-10 scale)
+            const newIntensity = Math.min(
+              10,
+              Math.max(5, battleKeywordCount / 2)
+            );
+            turnTracker.updateBattleState({
+              intensity: newIntensity,
+              inProgress: true,
+            });
+
+            console.log(`Battle intensity updated to ${newIntensity}`);
+          }
+
+          // Use our improved turn tracker to determine who should speak next
+          character = turnTracker.determineNextSpeaker(
+            chatRoom.characters,
+            lastMessage,
+            chatRoom
+          );
+          console.log("Selected character to speak:", character?.name);
+
+          // If no character was determined, pick a random one
+          if (!character) {
+            character =
+              chatRoom.characters[
+                Math.floor(Math.random() * chatRoom.characters.length)
+              ];
+            console.log("Fallback to random character:", character?.name);
+          }
+        } else {
+          // If there's no last message, pick a random character
+          character =
+            chatRoom.characters[
+              Math.floor(Math.random() * chatRoom.characters.length)
+            ];
+          console.log(
+            "No last message, selected random character:",
+            character?.name
+          );
+        }
+      }
+    }
+
     if (!character) {
       console.error("No character provided to handleCharacterTurn");
       return;
@@ -3444,6 +3543,141 @@ const ChatRoom = ({
     return result;
   };
 
+  // Helper function to handle character response generation
+  const handleCharacterResponse = (character, userMessage) => {
+    if (!character || !userMessage) return;
+
+    try {
+      // Get character with current mood
+      const characterWithCurrentMood = {
+        ...character,
+        mood:
+          getMoodState(moodStates, character.name, character)?.currentMood ||
+          character.mood,
+      };
+
+      // Generate character-specific writing instructions based on story arc
+      let responseInstructions = { ...writingInstructions };
+      if (storyArc) {
+        responseInstructions = generateWritingInstructions(storyArc, character);
+      }
+
+      // Limit context to recent messages for more focused responses
+      const limitedContext = chatHistory.slice(-6);
+
+      // Generate the response
+      let response;
+      try {
+        // Record this character's turn in the tracker
+        const isBattleScenario = detectBattleScenario(chatRoom, chatHistory);
+        turnTracker.recordTurn(character.name, "dialogue", {
+          isBattle: isBattleScenario,
+        });
+
+        // Pass writing instructions, chatRoom, and relationships to the response generator
+        response = generateCharacterResponse(
+          characterWithCurrentMood,
+          userMessage.message,
+          limitedContext,
+          responseInstructions,
+          chatRoom,
+          relationships
+        );
+      } catch (error) {
+        console.error("Error generating character response:", error);
+        response =
+          "I'm not sure how to respond to that. Let's try a different topic.";
+      }
+
+      // Add the response to chat history
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(),
+          speaker: character.name,
+          character: character,
+          message: response,
+          isUser: false,
+          timestamp: new Date().toISOString(),
+          replyTo: userMessage.id,
+          writingInstructions: responseInstructions,
+        },
+      ]);
+
+      // Add a follow-up action with some probability
+      const actionChance = 0.3; // 30% chance of adding an action
+      if (Math.random() < actionChance) {
+        setTimeout(() => {
+          try {
+            // Default generic actions for any character type
+            let actions = [
+              `*${character.name} nods thoughtfully*`,
+              `*${character.name} gestures expressively*`,
+              `*${character.name} raises an eyebrow*`,
+              `*${character.name} glances around*`,
+              `*${character.name} shifts position slightly*`,
+              `*${character.name} considers for a moment*`,
+            ];
+
+            // Add character-type specific actions if available
+            if (character.type === "fantasy") {
+              actions = [
+                `*${character.name} traces a mystical symbol in the air*`,
+                `*${character.name} adjusts their magical artifacts*`,
+                `*${character.name} whispers an ancient incantation*`,
+                `*${character.name} studies an ancient text or rune*`,
+                `*${character.name} senses magical energies in the vicinity*`,
+              ];
+            } else if (character.type === "superhero") {
+              actions = [
+                `*${character.name} checks a communication device*`,
+                `*${character.name} adjusts their costume slightly*`,
+                `*${character.name} scans the environment for threats*`,
+                `*${character.name} demonstrates a small use of their powers*`,
+                `*${character.name} strikes a confident pose*`,
+              ];
+            }
+
+            // Select a random action
+            const action = actions[Math.floor(Math.random() * actions.length)];
+
+            // Add the action to chat history
+            setChatHistory((prev) => [
+              ...prev,
+              {
+                id: Date.now() + Math.random(),
+                speaker: character.name,
+                character: character,
+                message: action,
+                isUser: false,
+                isAction: true,
+                timestamp: new Date().toISOString(),
+              },
+            ]);
+          } catch (error) {
+            console.error("Error generating character action:", error);
+          }
+        }, 1000 + Math.random() * 2000); // Add action 1-3 seconds after the message
+      }
+
+      // In one-on-one chats, sometimes have the character continue the conversation
+      const isOneOnOneChat = chatRoom.characters.length === 1;
+      if (isOneOnOneChat && Math.random() < 0.4) {
+        // 40% chance of follow-up
+        setTimeout(() => {
+          handleCharacterTurn(character);
+        }, 3000 + Math.random() * 3000); // 3-6 second delay before follow-up
+      }
+
+      setIsTyping(false);
+      setTypingCharacter(null);
+    } catch (error) {
+      console.error("Error in handleCharacterResponse:", error);
+      setIsTyping(false);
+      setTypingCharacter(null);
+    }
+  };
+
   // Helper function to determine the most appropriate character to respond
   const determineRespondingCharacter = (option, characters) => {
     if (!characters || characters.length === 0) {
@@ -3590,6 +3824,42 @@ const ChatRoom = ({
 
       setChatHistory([...chatHistory, actionMessage]);
       setMessage("");
+
+      // If auto-respond is enabled, trigger character responses to the action
+      if (autoRespond) {
+        // Determine if we're in a one-on-one chat
+        const isOneOnOneChat = chatRoom.characters.length === 1;
+
+        if (isOneOnOneChat) {
+          // In one-on-one chats, have the AI character respond to the action
+          setTimeout(() => {
+            handleCharacterTurn(chatRoom.characters[0]);
+          }, 1000); // Short delay before response
+        } else {
+          // In group chats, determine if any character should respond to the action
+          // based on the action content and character relationships
+          const actionLower = message.toLowerCase();
+
+          // Check if the action mentions any character by name
+          const mentionedCharacters = chatRoom.characters.filter((char) =>
+            actionLower.includes(char.name.toLowerCase())
+          );
+
+          if (mentionedCharacters.length > 0) {
+            // If characters are mentioned, have one of them respond
+            setTimeout(() => {
+              handleCharacterTurn(mentionedCharacters[0]);
+            }, 1000);
+          } else if (Math.random() < 0.7) {
+            // 70% chance of response to an action
+            // Auto-select a character to respond
+            setTimeout(() => {
+              handleCharacterTurn("auto");
+            }, 1000);
+          }
+        }
+      }
+
       return;
     }
 
@@ -3608,7 +3878,29 @@ const ChatRoom = ({
 
     if (!autoRespond) return;
 
-    // Simulate other characters responding
+    // Determine if we're in a one-on-one chat
+    const isOneOnOneChat = chatRoom.characters.length === 1;
+
+    if (isOneOnOneChat) {
+      // In one-on-one chats, always have the AI character respond
+      setIsTyping(true);
+      setTypingCharacter(chatRoom.characters[0]);
+
+      // Calculate a natural typing delay based on message length
+      const character = chatRoom.characters[0];
+      const thinkingSpeed = character.thinkingSpeed || 1;
+      const baseDelay = 1000 / thinkingSpeed;
+      const messageLength = Math.min(100, message.length);
+      const typingDelay = baseDelay + messageLength * 30;
+
+      setTimeout(() => {
+        handleCharacterResponse(character, userMessage);
+      }, typingDelay);
+
+      return;
+    }
+
+    // For group chats, continue with the existing logic
     setIsTyping(true);
 
     // Determine which characters will respond using our new utility
@@ -5869,7 +6161,7 @@ const ChatRoom = ({
 
           {/* Instagram-style input area */}
           <div className="flex items-center gap-2 mt-2">
-            {/* Character selector button - now as an avatar button */}
+            {/* Enhanced Character selector button with label */}
             <div className="relative">
               <button
                 onClick={() => {
@@ -5878,17 +6170,17 @@ const ChatRoom = ({
                   );
                   dropdown.classList.toggle("hidden");
                 }}
-                className="flex-shrink-0 relative group"
+                className="flex items-center gap-2 px-2 py-1 rounded-md bg-secondary/30 hover:bg-secondary/50 transition-colors"
                 title={
                   activeCharacter
-                    ? `Speaking as ${activeCharacter.name}`
-                    : "Select character"
+                    ? `Change character (currently ${activeCharacter.name})`
+                    : "Select a character to play"
                 }
               >
                 <div
-                  className={`w-9 h-9 rounded-full overflow-hidden border-2 ${
+                  className={`w-8 h-8 rounded-full overflow-hidden border-2 ${
                     activeCharacter ? "border-primary" : "border-muted"
-                  } flex-shrink-0 transition-all group-hover:border-primary/80`}
+                  } flex-shrink-0 transition-all`}
                 >
                   {activeCharacter ? (
                     typeof getCharacterAvatar(activeCharacter) === "string" ? (
@@ -5906,39 +6198,76 @@ const ChatRoom = ({
                     </div>
                   )}
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-[10px] text-white font-bold">
-                  +
+                <div className="flex flex-col items-start">
+                  <span className="text-xs text-muted-foreground">
+                    Playing as:
+                  </span>
+                  <span className="text-sm font-medium truncate max-w-[100px]">
+                    {activeCharacter
+                      ? activeCharacter.name
+                      : "Select Character"}
+                  </span>
                 </div>
+                <ChevronRight className="h-4 w-4 ml-1 text-muted-foreground" />
               </button>
 
               <div
                 id="character-select-dropdown"
-                className="absolute left-0 bottom-full mb-2 w-[220px] bg-background border border-input rounded-lg shadow-lg z-10 hidden"
+                className="absolute left-0 bottom-full mb-2 w-[280px] bg-background/95 backdrop-blur-sm border border-input rounded-lg shadow-lg z-10 hidden"
               >
-                <div className="p-2 max-h-[300px] overflow-y-auto">
-                  <h4 className="text-xs font-medium text-muted-foreground px-2 py-1 mb-1">
-                    Speak as...
+                <div className="p-3 max-h-[400px] overflow-y-auto">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="text-sm font-medium">
+                      Choose Your Character
+                    </h4>
+                    <button
+                      onClick={() => {
+                        document
+                          .getElementById("character-select-dropdown")
+                          .classList.add("hidden");
+                      }}
+                      className="p-1 rounded-full hover:bg-secondary/50"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Select which character you want to play in this
+                    conversation. You can switch characters at any time.
+                  </p>
+
+                  <div className="mb-3">
+                    <button
+                      onClick={() => {
+                        setActiveCharacter(yourselfCharacter);
+                        document
+                          .getElementById("character-select-dropdown")
+                          .classList.add("hidden");
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-accent rounded-md ${
+                        activeCharacter?.name === "Yourself"
+                          ? "bg-primary/10 border border-primary/30"
+                          : "border border-border"
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-secondary/30 flex items-center justify-center flex-shrink-0">
+                        <User className="h-5 w-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium">Yourself</span>
+                        <span className="text-xs text-muted-foreground">
+                          Play as yourself in the conversation
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+
+                  <h4 className="text-xs font-medium text-muted-foreground px-1 py-1 mb-2">
+                    Available Characters
                   </h4>
 
-                  <button
-                    onClick={() => {
-                      setActiveCharacter(yourselfCharacter);
-                      document
-                        .getElementById("character-select-dropdown")
-                        .classList.add("hidden");
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-accent rounded-md text-sm"
-                  >
-                    <User className="h-5 w-5 flex-shrink-0" />
-                    <span className="font-medium">Yourself</span>
-                  </button>
-
-                  <div className="h-px bg-border my-1.5"></div>
-                  <h4 className="text-xs font-medium text-muted-foreground px-2 py-1 mb-1">
-                    Characters
-                  </h4>
-
-                  <div className="grid grid-cols-2 gap-1">
+                  <div className="space-y-2">
                     {chatRoom?.characters.map((char) => (
                       <button
                         key={char.name}
@@ -5948,10 +6277,10 @@ const ChatRoom = ({
                             .getElementById("character-select-dropdown")
                             .classList.add("hidden");
                         }}
-                        className={`flex flex-col items-center gap-1 p-2 text-center hover:bg-accent rounded-md text-xs ${
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-accent rounded-md ${
                           activeCharacter?.name === char.name
                             ? "bg-primary/10 border border-primary/30"
-                            : ""
+                            : "border border-border"
                         }`}
                       >
                         {typeof getCharacterAvatar(char) === "string" ? (
@@ -5967,24 +6296,38 @@ const ChatRoom = ({
                             {getCharacterAvatar(char)}
                           </div>
                         )}
-                        <div className="flex items-center gap-1.5 w-full">
-                          <span className="truncate font-medium">
-                            {char.name}
+                        <div className="flex flex-col items-start">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium">{char.name}</span>
+                            <MoodIndicator
+                              mood={
+                                getMoodState(moodStates, char.name, char)
+                                  ?.currentMood || char.mood
+                              }
+                              intensity={
+                                getMoodState(moodStates, char.name, char)
+                                  ?.intensity || 5
+                              }
+                              size="sm"
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground line-clamp-1">
+                            {char.description
+                              ? char.description.substring(0, 60) +
+                                (char.description.length > 60 ? "..." : "")
+                              : char.type}
                           </span>
-                          <MoodIndicator
-                            mood={
-                              getMoodState(moodStates, char.name, char)
-                                ?.currentMood || char.mood
-                            }
-                            intensity={
-                              getMoodState(moodStates, char.name, char)
-                                ?.intensity || 5
-                            }
-                            size="sm"
-                          />
                         </div>
                       </button>
                     ))}
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground">
+                      Tip: You can also use the lightning bolt button to make
+                      any character speak without changing your active
+                      character.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -6023,10 +6366,10 @@ const ChatRoom = ({
                   <BookOpen className="h-4 w-4" />
                 </button>
 
-                {/* Character Turn Button - Skip your turn and let a character speak */}
+                {/* Enhanced Character Turn Button - Let an AI character speak without typing a message */}
                 <div className="relative">
                   <button
-                    className="p-1.5 rounded-full hover:bg-secondary/50 text-muted-foreground transition-colors"
+                    className="p-1.5 rounded-full hover:bg-primary/20 text-primary transition-colors"
                     data-character-turn-toggle="true"
                     onClick={() => {
                       // Show character selection dropdown
@@ -6042,7 +6385,7 @@ const ChatRoom = ({
                         );
                       }
                     }}
-                    title="Let AI character speak"
+                    title="Let AI character speak (auto-response)"
                   >
                     <Zap className="h-4 w-4" />
                   </button>
@@ -6050,16 +6393,30 @@ const ChatRoom = ({
                   {/* Character selection dropdown */}
                   <div
                     id="character-turn-dropdown"
-                    className="absolute bottom-full right-0 mb-2 bg-background/95 backdrop-blur-sm border border-input rounded-md shadow-lg p-1.5 hidden z-10 min-w-[220px] max-w-[280px]"
+                    className="absolute bottom-full right-0 mb-2 bg-background/95 backdrop-blur-sm border border-input rounded-md shadow-lg p-3 hidden z-10 min-w-[250px]"
                   >
-                    <h4 className="text-xs font-medium text-muted-foreground px-2 py-1">
-                      Choose character to speak
-                    </h4>
-                    <div className="h-px bg-border my-1"></div>
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="text-sm font-medium">AI Auto-Response</h4>
+                      <button
+                        onClick={() => {
+                          document
+                            .getElementById("character-turn-dropdown")
+                            .classList.add("hidden");
+                        }}
+                        className="p-1 rounded-full hover:bg-secondary/50"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Let an AI character respond without you typing a message.
+                      Useful for advancing the conversation.
+                    </p>
 
                     {/* Auto-select option */}
                     <button
-                      className="w-full text-left px-2.5 py-2 text-xs rounded-md hover:bg-primary/20 flex items-center gap-3 transition-colors bg-secondary/20"
+                      className="w-full text-left px-3 py-2.5 text-sm rounded-md hover:bg-primary/20 flex items-center gap-3 transition-colors bg-secondary/20 border border-primary/20 mb-3"
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent event bubbling
 
@@ -6078,49 +6435,70 @@ const ChatRoom = ({
                         handleCharacterTurn("auto");
                       }}
                     >
-                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="h-4 w-4 text-primary" />
                       </div>
-                      <span className="truncate font-medium">
-                        Auto-select best character
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          Auto-select best character
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Let the AI choose who should speak next
+                        </span>
+                      </div>
                     </button>
 
-                    <div className="h-px bg-border my-1"></div>
-                    {chatRoom?.characters && chatRoom.characters.length > 0 ? (
-                      chatRoom.characters.map((char) => (
-                        <button
-                          key={`turn-${char.name}`}
-                          className="w-full text-left px-2.5 py-2 text-xs rounded-md hover:bg-secondary/30 flex items-center gap-3 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent event bubbling
+                    <h4 className="text-xs font-medium text-muted-foreground px-1 py-1 mb-2">
+                      Choose Specific Character
+                    </h4>
 
-                            // Hide dropdown
-                            const dropdown = document.getElementById(
-                              "character-turn-dropdown"
-                            );
-                            if (dropdown) {
-                              dropdown.classList.add("hidden");
-                              console.log(`Selected character: ${char.name}`);
-                            }
+                    <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                      {chatRoom?.characters &&
+                      chatRoom.characters.length > 0 ? (
+                        chatRoom.characters.map((char) => (
+                          <button
+                            key={`turn-${char.name}`}
+                            className="w-full text-left px-3 py-2 text-xs rounded-md hover:bg-secondary/30 flex items-center gap-3 transition-colors border border-border"
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent event bubbling
 
-                            // Make the character speak
-                            handleCharacterTurn(char);
-                          }}
-                        >
-                          <div className="flex-shrink-0">
-                            <CharacterAvatar character={char} size="xs" />
-                          </div>
-                          <span className="truncate font-medium max-w-[160px]">
-                            {char.name}
-                          </span>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-2.5 py-2 text-xs text-muted-foreground">
-                        No characters available
-                      </div>
-                    )}
+                              // Hide dropdown
+                              const dropdown = document.getElementById(
+                                "character-turn-dropdown"
+                              );
+                              if (dropdown) {
+                                dropdown.classList.add("hidden");
+                                console.log(`Selected character: ${char.name}`);
+                              }
+
+                              // Make the character speak
+                              handleCharacterTurn(char);
+                            }}
+                          >
+                            <div className="flex-shrink-0">
+                              <CharacterAvatar character={char} size="sm" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{char.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {char.mood} • {char.type}
+                              </span>
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-2.5 py-2 text-xs text-muted-foreground">
+                          No characters available
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-border">
+                      <p className="text-xs text-muted-foreground">
+                        Tip: This feature works best when auto-respond is
+                        enabled in settings.
+                      </p>
+                    </div>
                   </div>
                 </div>
 

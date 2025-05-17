@@ -1098,23 +1098,19 @@ const LandingPage = ({
             </div>
           </div>
 
-          {/* Copyright */}
-          <div className="border-t border-primary/10 mt-4 pt-4 flex flex-wrap justify-between items-center">
-            <p className="text-xs text-muted-foreground">&copy; 2024 Velora</p>
-            <div className="flex items-center gap-3">
+          {/* Footer text */}
+          <div className="border-t border-primary/10 mt-4 pt-4 flex justify-center items-center">
+            <p className="text-xs text-muted-foreground">
+              Made with love, coffee and vibe coding by{" "}
               <a
-                href="#"
-                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                href="https://www.linkedin.com/in/saurao-dalvi/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 transition-colors underline"
               >
-                Privacy
+                Saurao Dalvi
               </a>
-              <a
-                href="#"
-                className="text-xs text-muted-foreground hover:text-primary transition-colors"
-              >
-                Terms
-              </a>
-            </div>
+            </p>
           </div>
         </div>
       </footer>

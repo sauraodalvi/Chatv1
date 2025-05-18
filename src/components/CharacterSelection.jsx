@@ -11,9 +11,11 @@ import {
   UserPlus,
   Edit,
   Wand2,
+  Plus,
 } from "lucide-react";
 import { characterLibrary } from "../data/characters";
 import { generateCharacterFromDescription } from "../utils/aiGenerationUtils";
+import EnhancedCharacterCreation from "./EnhancedCharacterCreation";
 
 const CharacterSelection = ({
   selectedCharacters,
@@ -47,6 +49,9 @@ const CharacterSelection = ({
     talkativeness: 5,
     thinkingSpeed: 1.0,
   });
+
+  // State for enhanced character creation
+  const [showEnhancedCreation, setShowEnhancedCreation] = useState(false);
 
   useEffect(() => {
     // Filter characters based on search term and type filter
@@ -265,6 +270,14 @@ const CharacterSelection = ({
         >
           <UserPlus className="h-4 w-4 mr-2" />
           Custom Character
+        </button>
+        <div className="flex-1"></div>
+        <button
+          onClick={() => setShowEnhancedCreation(true)}
+          className="px-4 py-2 text-sm font-medium flex items-center text-primary hover:text-primary/80"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          New Character
         </button>
       </div>
 
@@ -1120,6 +1133,17 @@ const CharacterSelection = ({
             </div>
           </form>
         </div>
+      )}
+
+      {/* Enhanced Character Creation */}
+      {showEnhancedCreation && (
+        <EnhancedCharacterCreation
+          onSave={(character) => {
+            setSelectedCharacters([...selectedCharacters, character]);
+            setShowEnhancedCreation(false);
+          }}
+          onCancel={() => setShowEnhancedCreation(false)}
+        />
       )}
 
       {/* Action buttons - fixed at bottom */}

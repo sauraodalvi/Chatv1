@@ -68,7 +68,13 @@ import {
 } from "../utils/moodUtils";
 import { getUserCharacters } from "../utils/userCharacterUtils";
 import UserCharacterManager from "./UserCharacterManager";
-import { generateStoryBranches } from "../utils/storyBranchingUtils";
+import { NarrativeDirector } from "../utils/story-branching/NarrativeDirector";
+import StoryBranchSelector from "./StoryBranchSelector";
+import { RelationshipMatrix } from "../utils/character-relationships/RelationshipMatrix";
+import { RelationshipAnalyzer } from "../utils/character-relationships/RelationshipAnalyzer";
+import RelationshipGraph from "./RelationshipGraph";
+import { MemoryManager } from "../utils/memory-system/MemoryManager";
+import MemoryPanel from "./MemoryPanel";
 import { generateBattleOptions } from "../utils/enhancedStoryBranchingUtils";
 import {
   updateStoryArc,
@@ -115,7 +121,6 @@ const ChatRoom = ({
   const [currentAction, setCurrentAction] = useState("");
   const [showNarrationInput, setShowNarrationInput] = useState(false);
   const [waitingForUserInput, setWaitingForUserInput] = useState(false);
-  const [relationships, setRelationships] = useState([]);
   const [moodStates, setMoodStates] = useState([]);
   const [narrationText, setNarrationText] = useState("");
   const [showWritingInstructions, setShowWritingInstructions] = useState(false);
@@ -166,6 +171,28 @@ const ChatRoom = ({
   const [narrativeManager, setNarrativeManager] = useState(null);
   const [turnTracker, setTurnTracker] = useState(new CharacterTurnTracker());
   const [showSensoryPanel, setShowSensoryPanel] = useState(false);
+
+  // Enhanced story branching system
+  const [narrativeDirector, setNarrativeDirector] = useState(null);
+  const [storyBranches, setStoryBranches] = useState([]);
+  const [showStoryBranches, setShowStoryBranches] = useState(false);
+
+  // Character relationship system
+  const [relationshipMatrix, setRelationshipMatrix] = useState(null);
+  const [relationshipAnalyzer, setRelationshipAnalyzer] = useState(null);
+  const [relationships, setRelationships] = useState([]);
+  const [showRelationshipGraph, setShowRelationshipGraph] = useState(false);
+  const [relationshipSuggestions, setRelationshipSuggestions] = useState([]);
+  const [showRelationshipSuggestion, setShowRelationshipSuggestion] =
+    useState(false);
+
+  // Contextual memory system
+  const [memoryManager, setMemoryManager] = useState(null);
+  const [memories, setMemories] = useState([]);
+  const [showMemoryPanel, setShowMemoryPanel] = useState(false);
+  const [memoryContext, setMemoryContext] = useState("");
+  const [showMemoryRecall, setShowMemoryRecall] = useState(false);
+  const [recalledMemory, setRecalledMemory] = useState(null);
   const [sensoryDescriptions, setSensoryDescriptions] = useState({
     sight: "",
     sound: "",
@@ -214,6 +241,7 @@ const ChatRoom = ({
   const [prioritizedActions, setPrioritizedActions] = useState({});
 
   const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
   // Create a "yourself" character object
   const yourselfCharacter = {
@@ -240,16 +268,31 @@ const ChatRoom = ({
   useEffect(() => {
     console.log("ChatRoom useEffect - chatRoom changed:", chatRoom?.name);
 
+    // Add defensive check for chatRoom
+    if (!chatRoom) {
+      console.error("ChatRoom component received null/undefined chatRoom");
+      return; // Exit early if chatRoom is not available
+    }
+
+    // Add defensive check for characters array
+    if (!chatRoom.characters || !Array.isArray(chatRoom.characters)) {
+      console.error(
+        "ChatRoom received invalid characters array:",
+        chatRoom.characters
+      );
+      return;
+    }
+
     // Load user characters
     loadUserCharacters();
 
     // Set the first character as active by default
-    if (chatRoom && chatRoom.characters.length > 0 && !activeCharacter) {
+    if (chatRoom.characters.length > 0 && !activeCharacter) {
       setActiveCharacter(chatRoom.characters[0]);
     }
 
     // Set chat background if available in chatRoom
-    if (chatRoom && chatRoom.background) {
+    if (chatRoom.background) {
       setChatBackground(chatRoom.background);
     }
 
@@ -326,6 +369,82 @@ const ChatRoom = ({
       const newNarrativeManager = new NarrativeStateManager();
       setNarrativeManager(newNarrativeManager);
 
+      // Initialize the NarrativeDirector for enhanced story branching
+      const scenarioType =
+        theme === "superhero"
+          ? "adventure"
+          : theme === "noir"
+          ? "mystery"
+          : theme;
+      const newNarrativeDirector = new NarrativeDirector(scenarioType);
+      setNarrativeDirector(newNarrativeDirector);
+
+      // Initialize the RelationshipMatrix and RelationshipAnalyzer
+      const newRelationshipMatrix = new RelationshipMatrix();
+      setRelationshipMatrix(newRelationshipMatrix);
+
+      const newRelationshipAnalyzer = new RelationshipAnalyzer(
+        newRelationshipMatrix
+      );
+      setRelationshipAnalyzer(newRelationshipAnalyzer);
+
+      // Initialize relationships between all character pairs with defensive checks
+      try {
+        const characters = chatRoom.characters;
+        if (characters && characters.length > 1) {
+          for (let i = 0; i < characters.length; i++) {
+            for (let j = i + 1; j < characters.length; j++) {
+              const char1 = characters[i]?.name;
+              const char2 = characters[j]?.name;
+
+              if (char1 && char2) {
+                // Initialize with default values
+                newRelationshipMatrix.initializeRelationship(char1, char2);
+              } else {
+                console.warn(
+                  "Skipping relationship initialization for undefined character names",
+                  {
+                    char1Index: i,
+                    char2Index: j,
+                    char1Name: char1,
+                    char2Name: char2,
+                  }
+                );
+              }
+            }
+          }
+
+          // Update relationships state
+          const allRelationships = newRelationshipMatrix.getAllRelationships();
+          console.log("Initialized relationships:", allRelationships);
+          setRelationships(allRelationships);
+        } else {
+          console.log("Not enough characters to initialize relationships");
+        }
+      } catch (error) {
+        console.error("Error initializing relationship matrix:", error);
+      }
+
+      // Initialize the MemoryManager for contextual memory
+      const storageKey = `velora-memories-${chatRoom.name
+        .replace(/\s+/g, "-")
+        .toLowerCase()}`;
+      const newMemoryManager = new MemoryManager({
+        maxMemories: 200,
+        recentMessageCount: 15,
+        summaryInterval: 20,
+        storageKey: storageKey,
+      });
+      setMemoryManager(newMemoryManager);
+
+      // Load initial memories
+      setMemories(newMemoryManager.getAllMemories());
+
+      // Set relationships in the narrative director
+      if (relationships.length > 0) {
+        newNarrativeDirector.setCharacterRelationships(relationships);
+      }
+
       // Initialize sensory descriptions based on theme
       updateSensoryDescriptions(newStoryManager);
 
@@ -352,69 +471,135 @@ const ChatRoom = ({
 
         // For Avengers scenario, set up special battle tracking
         if (chatRoom.name && chatRoom.name.includes("Avengers")) {
-          // Determine location based on chat history or default to New York
-          let detectedLocation = "new_york";
-          if (chatHistory.length > 0) {
-            const locationKeywords = {
-              "times square": "times_square",
-              "central park": "central_park",
-              "brooklyn bridge": "brooklyn_bridge",
-              manhattan: "new_york",
-              downtown: "new_york",
-            };
+          console.log("Initializing Avengers battle scenario");
+          try {
+            // Determine location based on chat history or default to New York
+            let detectedLocation = "new_york";
+            if (
+              chatHistory &&
+              Array.isArray(chatHistory) &&
+              chatHistory.length > 0
+            ) {
+              const locationKeywords = {
+                "times square": "times_square",
+                "central park": "central_park",
+                "brooklyn bridge": "brooklyn_bridge",
+                manhattan: "new_york",
+                downtown: "new_york",
+              };
 
-            // Check last 10 messages for location references
-            const recentMessages = chatHistory.slice(-10);
-            for (const msg of recentMessages) {
-              if (msg.message) {
-                const msgLower = msg.message.toLowerCase();
-                for (const [keyword, location] of Object.entries(
-                  locationKeywords
-                )) {
-                  if (msgLower.includes(keyword)) {
-                    detectedLocation = location;
-                    break;
+              // Check last 10 messages for location references
+              const recentMessages = chatHistory.slice(-10);
+              for (const msg of recentMessages) {
+                if (msg && msg.message) {
+                  const msgLower = msg.message.toLowerCase();
+                  for (const [keyword, location] of Object.entries(
+                    locationKeywords
+                  )) {
+                    if (msgLower.includes(keyword)) {
+                      detectedLocation = location;
+                      break;
+                    }
                   }
                 }
               }
             }
+
+            console.log(
+              "Detected location for Avengers scenario:",
+              detectedLocation
+            );
+
+            // Set current location
+            setCurrentLocation(detectedLocation);
+
+            // Update battle state with defensive checks
+            const newBattleState = {
+              inProgress: isBattleScenario,
+              intensity: battleIntensity || 5, // Default to 5 if undefined
+              focusCharacter: null, // Will be determined dynamically
+              threatLevel: storyArc?.currentTension || "medium",
+              civilianDanger: isBattleScenario ? 7 : 3,
+              enemyClusters: [],
+            };
+
+            console.log("Setting battle state:", newBattleState);
+            setBattleState(newBattleState);
+
+            if (turnTracker) {
+              turnTracker.updateBattleState(newBattleState);
+            } else {
+              console.warn(
+                "turnTracker is undefined, cannot update battle state"
+              );
+            }
+          } catch (error) {
+            console.error(
+              "Error initializing Avengers battle scenario:",
+              error
+            );
           }
 
-          // Set current location
-          setCurrentLocation(detectedLocation);
+          try {
+            // Generate initial scene description with defensive checks
+            console.log(
+              "Generating scene description for location:",
+              detectedLocation
+            );
+            const sceneDescription = generateSceneDescription(
+              detectedLocation || "new_york",
+              battleIntensity || 5,
+              previousSceneDescriptions || []
+            );
 
-          // Update battle state
-          const newBattleState = {
-            inProgress: isBattleScenario,
-            intensity: battleIntensity,
-            focusCharacter: null, // Will be determined dynamically
-            threatLevel: storyArc.currentTension || "medium",
-            civilianDanger: isBattleScenario ? 7 : 3,
-            enemyClusters: [],
-          };
+            if (sceneDescription) {
+              console.log(
+                "Generated scene description:",
+                sceneDescription.substring(0, 50) + "..."
+              );
+              // Add to previous descriptions to avoid repetition
+              setPreviousSceneDescriptions([sceneDescription]);
+            } else {
+              console.warn("Failed to generate scene description");
+            }
 
-          setBattleState(newBattleState);
-          turnTracker.updateBattleState(newBattleState);
+            // Generate sensory details with defensive checks
+            const sensorySuite = generateSensoryDetails(
+              detectedLocation || "new_york",
+              narrativePhase || "introduction",
+              environmentalConditions || {
+                time: "midday",
+                weather: "clear",
+                progression: 0,
+              }
+            );
 
-          // Generate initial scene description
-          const sceneDescription = generateSceneDescription(
-            detectedLocation,
-            battleIntensity,
-            previousSceneDescriptions
-          );
+            if (sensorySuite) {
+              console.log("Generated sensory details");
+            } else {
+              console.warn("Failed to generate sensory details");
+            }
+          } catch (error) {
+            console.error(
+              "Error generating scene description or sensory details:",
+              error
+            );
+          }
 
-          // Add to previous descriptions to avoid repetition
-          setPreviousSceneDescriptions([sceneDescription]);
-
-          // Generate sensory details
-          const sensorySuite = generateSensoryDetails(
-            detectedLocation,
-            narrativePhase,
-            environmentalConditions
-          );
-
-          // Update sensory descriptions
-          setSensoryDescriptions(sensorySuite);
+          // Update sensory descriptions with defensive check
+          if (sensorySuite) {
+            setSensoryDescriptions(sensorySuite);
+          } else {
+            // Set default sensory descriptions if sensorySuite is undefined
+            setSensoryDescriptions({
+              sight: "The battle rages around you in the streets of New York.",
+              sound:
+                "Explosions and the sounds of combat echo through the city.",
+              smell: "The air is filled with dust and smoke.",
+              touch: "The ground trembles beneath your feet.",
+              taste: "There's a metallic taste in the air.",
+            });
+          }
 
           console.log(
             "Initialized Avengers battle scenario tracking in " +
@@ -872,6 +1057,46 @@ const ChatRoom = ({
       }
     }
 
+    // Check if we should suggest a story branch using the enhanced NarrativeDirector
+    if (
+      narrativeDirector &&
+      chatHistory.length > 0 &&
+      !isTyping &&
+      !showStoryBranches
+    ) {
+      // Only check if enough messages have passed since the last branch
+      if (narrativeDirector.shouldSuggestBranch(chatHistory)) {
+        // Generate branch options
+        const scenarioType =
+          chatRoom?.theme ||
+          (chatRoom?.openingPrompt?.toLowerCase().includes("mystery")
+            ? "mystery"
+            : chatRoom?.openingPrompt?.toLowerCase().includes("horror")
+            ? "horror"
+            : chatRoom?.openingPrompt?.toLowerCase().includes("sci-fi")
+            ? "scifi"
+            : "adventure");
+
+        // Update the scenario type in the narrative director
+        narrativeDirector.setScenarioType(scenarioType);
+
+        // Update relationships in the narrative director
+        if (relationships.length > 0) {
+          narrativeDirector.setCharacterRelationships(relationships);
+        }
+
+        // Generate branch options
+        const branchOptions = narrativeDirector.generateBranchOptions(
+          chatHistory,
+          chatRoom
+        );
+
+        // Set the branches and show them
+        setStoryBranches(branchOptions);
+        setShowStoryBranches(true);
+      }
+    }
+
     // Manage narrative flow and trigger character interactions
     if (chatHistory.length > 0 && autoRespond) {
       const lastMessage = chatHistory[chatHistory.length - 1];
@@ -1125,6 +1350,72 @@ const ChatRoom = ({
       console.log("Removed click outside handler for character turn dropdown");
     };
   }, []);
+
+  // Update memory context based on recent messages
+  useEffect(() => {
+    // Scroll to bottom when chat history changes
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+
+    // Update memory context based on recent messages
+    if (chatHistory.length > 0 && memoryManager) {
+      // Get the last 5 messages
+      const recentMessages = chatHistory.slice(-5);
+
+      // Create a context string from recent messages
+      const contextString = recentMessages
+        .map((msg) => {
+          if (msg.system) {
+            return msg.message;
+          } else {
+            return `${msg.speaker || "Unknown"}: ${msg.message}`;
+          }
+        })
+        .join("\n");
+
+      // Update memory context
+      setMemoryContext(contextString);
+    }
+  }, [chatHistory]);
+
+  // Handle global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Close panels with Escape key
+      if (e.key === "Escape") {
+        if (showNextOptions) {
+          setShowNextOptions(false);
+          return;
+        }
+        if (showSensoryPanel) {
+          setShowSensoryPanel(false);
+          return;
+        }
+      }
+
+      // Toggle "What Next?" panel with Alt+W
+      if (e.altKey && e.key === "w") {
+        generateNextOptions();
+        return;
+      }
+
+      // Toggle Scene Details panel with Alt+S
+      if (e.altKey && e.key === "s") {
+        setShowSensoryPanel(!showSensoryPanel);
+        return;
+      }
+    };
+
+    // Add event listener
+    document.addEventListener("keydown", handleKeyDown);
+
+    // Clean up
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showNextOptions, showSensoryPanel]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -3592,894 +3883,1180 @@ const ChatRoom = ({
       return "defend";
     }
 
-    return "default";
+    return "neutral";
   };
 
-  // Helper function to determine emotion changes based on an option
-  const determineEmotionChange = (option, character) => {
-    const optionLower = option.toLowerCase();
-    const characterNameLower = character.name.toLowerCase();
-
-    // Check if the option specifically mentions this character
-    const isAboutCharacter = optionLower.includes(characterNameLower);
-
-    // Default emotion change
-    const result = { emotion: null, value: 0 };
-
-    // Determine emotion change based on option content
-    if (
-      optionLower.includes("danger") ||
-      optionLower.includes("threat") ||
-      optionLower.includes("attack") ||
-      optionLower.includes("fear")
-    ) {
-      result.emotion = "tension";
-      result.value = isAboutCharacter ? 3 : 1;
-    } else if (
-      optionLower.includes("reveal") ||
-      optionLower.includes("secret") ||
-      optionLower.includes("discover") ||
-      optionLower.includes("learn")
-    ) {
-      result.emotion = "trust";
-      result.value = isAboutCharacter ? 2 : 1;
-    } else if (
-      optionLower.includes("joke") ||
-      optionLower.includes("laugh") ||
-      optionLower.includes("funny") ||
-      optionLower.includes("amuse")
-    ) {
-      result.emotion = "humor";
-      result.value = 2;
+  // Handle story branch selection from the enhanced branching system
+  const handleStoryBranchSelection = (branch) => {
+    // Record the selection in the narrative director
+    if (narrativeDirector) {
+      narrativeDirector.recordBranchSelection(branch);
     }
 
-    return result;
-  };
-
-  // Helper function to handle character response generation
-  const handleCharacterResponse = (character, userMessage) => {
-    if (!character || !userMessage) return;
-
-    try {
-      // Get character with current mood
-      const characterWithCurrentMood = {
-        ...character,
-        mood:
-          getMoodState(moodStates, character.name, character)?.currentMood ||
-          character.mood,
-      };
-
-      // Generate character-specific writing instructions based on story arc
-      let responseInstructions = { ...writingInstructions };
-      if (storyArc) {
-        responseInstructions = generateWritingInstructions(storyArc, character);
-      }
-
-      // Limit context to recent messages for more focused responses
-      const limitedContext = chatHistory.slice(-6);
-
-      // Generate the response
-      let response;
-      try {
-        // Record this character's turn in the tracker
-        const isBattleScenario = detectBattleScenario(chatRoom, chatHistory);
-        turnTracker.recordTurn(character.name, "dialogue", {
-          isBattle: isBattleScenario,
-        });
-
-        // Pass writing instructions, chatRoom, and relationships to the response generator
-        response = generateCharacterResponse(
-          characterWithCurrentMood,
-          userMessage.message,
-          limitedContext,
-          responseInstructions,
-          chatRoom,
-          relationships
-        );
-      } catch (error) {
-        console.error("Error generating character response:", error);
-
-        // Use character-specific fallback instead of generic message
-        const isBattleScenario = detectBattleScenario(chatRoom, chatHistory);
-        const context = isBattleScenario ? "battle" : "conversation";
-
-        // Check for romantic/inappropriate context in the user message
-        const userMessageLower = userMessage.message.toLowerCase();
-        const hasRomanticContext =
-          userMessageLower.includes("love") ||
-          userMessageLower.includes("kiss") ||
-          userMessageLower.includes("hug") ||
-          userMessageLower.includes("beautiful") ||
-          userMessageLower.includes("marry") ||
-          userMessageLower.includes("date") ||
-          userMessageLower.includes("come here") ||
-          userMessageLower.includes("touch") ||
-          userMessageLower.includes("hold") ||
-          userMessageLower.includes("feel") ||
-          userMessageLower.includes("heart") ||
-          userMessageLower.includes("together") ||
-          userMessageLower.includes("want you");
-
-        // Use romantic context if detected for fantasy characters
-        const effectiveContext =
-          hasRomanticContext && character.type === "fantasy"
-            ? "romantic"
-            : context;
-
-        response = generateCharacterFallback(
-          character,
-          effectiveContext,
-          userMessage.message
-        );
-      }
-
-      // Add the response to chat history
-      setChatHistory((prev) => [
-        ...prev,
-        {
-          id: Date.now() + Math.random(),
-          speaker: character.name,
-          character: character,
-          message: response,
-          isUser: false,
-          timestamp: new Date().toISOString(),
-          replyTo: userMessage.id,
-          writingInstructions: responseInstructions,
-        },
-      ]);
-
-      // Add a follow-up action with some probability
-      const actionChance = 0.3; // 30% chance of adding an action
-      if (Math.random() < actionChance) {
-        setTimeout(() => {
-          try {
-            // Default generic actions for any character type
-            let actions = [
-              `*${character.name} nods thoughtfully*`,
-              `*${character.name} gestures expressively*`,
-              `*${character.name} raises an eyebrow*`,
-              `*${character.name} glances around*`,
-              `*${character.name} shifts position slightly*`,
-              `*${character.name} considers for a moment*`,
-            ];
-
-            // Add character-type specific actions if available
-            if (character.type === "fantasy") {
-              actions = [
-                `*${character.name} traces a mystical symbol in the air*`,
-                `*${character.name} adjusts their magical artifacts*`,
-                `*${character.name} whispers an ancient incantation*`,
-                `*${character.name} studies an ancient text or rune*`,
-                `*${character.name} senses magical energies in the vicinity*`,
-              ];
-            } else if (character.type === "superhero") {
-              actions = [
-                `*${character.name} checks a communication device*`,
-                `*${character.name} adjusts their costume slightly*`,
-                `*${character.name} scans the environment for threats*`,
-                `*${character.name} demonstrates a small use of their powers*`,
-                `*${character.name} strikes a confident pose*`,
-              ];
-            }
-
-            // Select a random action
-            const action = actions[Math.floor(Math.random() * actions.length)];
-
-            // Add the action to chat history
-            setChatHistory((prev) => [
-              ...prev,
-              {
-                id: Date.now() + Math.random(),
-                speaker: character.name,
-                character: character,
-                message: action,
-                isUser: false,
-                isAction: true,
-                timestamp: new Date().toISOString(),
-              },
-            ]);
-          } catch (error) {
-            console.error("Error generating character action:", error);
-          }
-        }, 1000 + Math.random() * 2000); // Add action 1-3 seconds after the message
-      }
-
-      // In one-on-one chats, sometimes have the character continue the conversation
-      const isOneOnOneChat = chatRoom.characters.length === 1;
-      if (isOneOnOneChat && Math.random() < 0.4) {
-        // 40% chance of follow-up
-        setTimeout(() => {
-          handleCharacterTurn(character);
-        }, 3000 + Math.random() * 3000); // 3-6 second delay before follow-up
-      }
-
-      setIsTyping(false);
-      setTypingCharacter(null);
-    } catch (error) {
-      console.error("Error in handleCharacterResponse:", error);
-      setIsTyping(false);
-      setTypingCharacter(null);
-    }
-  };
-
-  // Helper function to determine the most appropriate character to respond
-  const determineRespondingCharacter = (option, characters) => {
-    if (!characters || characters.length === 0) {
-      return null;
-    }
-
-    const optionLower = option.toLowerCase();
-
-    // Check if the option specifically mentions a character
-    for (const character of characters) {
-      if (optionLower.includes(character.name.toLowerCase())) {
-        return character;
-      }
-    }
-
-    // Otherwise, choose based on the type of option
-    if (
-      optionLower.includes("danger") ||
-      optionLower.includes("threat") ||
-      optionLower.includes("attack") ||
-      optionLower.includes("combat")
-    ) {
-      // Find the most combat-oriented character
-      return characters.sort((a, b) => {
-        const aRelevance =
-          (a.personality?.confidence || 5) + (a.personality?.analytical || 5);
-        const bRelevance =
-          (b.personality?.confidence || 5) + (b.personality?.analytical || 5);
-        return bRelevance - aRelevance;
-      })[0];
-    }
-
-    if (
-      optionLower.includes("magic") ||
-      optionLower.includes("spell") ||
-      optionLower.includes("mystical") ||
-      optionLower.includes("energy")
-    ) {
-      // Find the most magical character
-      const magicalCharacter = characters.find(
-        (c) =>
-          c.type === "fantasy" ||
-          (c.description && c.description.toLowerCase().includes("magic"))
-      );
-
-      return (
-        magicalCharacter ||
-        characters[Math.floor(Math.random() * characters.length)]
-      );
-    }
-
-    if (
-      optionLower.includes("clue") ||
-      optionLower.includes("mystery") ||
-      optionLower.includes("investigate") ||
-      optionLower.includes("discover")
-    ) {
-      // Find the most analytical character
-      return characters.sort((a, b) => {
-        return (
-          (b.personality?.analytical || 5) - (a.personality?.analytical || 5)
-        );
-      })[0];
-    }
-
-    // Default to random selection
-    return characters[Math.floor(Math.random() * characters.length)];
-  };
-
-  // Apply custom "What happens next?" option
-  const applyCustomNextOption = () => {
-    if (!customNextOption.trim()) return;
-
-    applyNextOption(customNextOption);
-    setCustomNextOption("");
-  };
-
-  // Handle key press in the message input
-  const handleKeyPress = (e) => {
-    // Send message on Enter (without Shift)
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  // Handle global keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Close panels with Escape key
-      if (e.key === "Escape") {
-        if (showNextOptions) {
-          setShowNextOptions(false);
-          return;
-        }
-        if (showSensoryPanel) {
-          setShowSensoryPanel(false);
-          return;
-        }
-      }
-
-      // Toggle "What Next?" panel with Alt+W
-      if (e.altKey && e.key === "w") {
-        generateNextOptions();
-        return;
-      }
-
-      // Toggle Scene Details panel with Alt+S
-      if (e.altKey && e.key === "s") {
-        setShowSensoryPanel(!showSensoryPanel);
-        return;
-      }
-    };
-
-    // Add event listener
-    document.addEventListener("keydown", handleKeyDown);
-
-    // Clean up
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [showNextOptions, showSensoryPanel]);
-
-  const handleSendMessage = () => {
-    if (!message.trim() || !activeCharacter) return;
-
-    // Reset waiting for user input state
-    if (waitingForUserInput) {
-      setWaitingForUserInput(false);
-    }
-
-    // Check if message contains action markers (* at beginning and end)
-    if (message.startsWith("*") && message.endsWith("*")) {
-      // This is an action, not a regular message
-      const actionMessage = {
+    // Add the branch as a system message in the chat
+    setChatHistory([
+      ...chatHistory,
+      {
         id: Date.now(),
-        speaker: activeCharacter.name,
-        character: activeCharacter,
-        message: message,
-        isUser: true,
-        isAction: true,
+        message: branch,
+        system: true,
+        isNarration: true,
         timestamp: new Date().toISOString(),
-      };
+      },
+    ]);
 
-      setChatHistory([...chatHistory, actionMessage]);
-      setMessage("");
+    // Record the choice in the narrative state manager
+    if (narrativeManager) {
+      const choiceId = `choice_${Date.now()}`;
+      const intent = determineChoiceIntent(branch);
+      narrativeManager.recordChoice(choiceId, branch, intent);
 
-      // If auto-respond is enabled, trigger character responses to the action
-      if (autoRespond) {
-        // Determine if we're in a one-on-one chat
-        const isOneOnOneChat = chatRoom.characters.length === 1;
-
-        if (isOneOnOneChat) {
-          // In one-on-one chats, have the AI character respond to the action
-          setTimeout(() => {
-            handleCharacterTurn(chatRoom.characters[0]);
-          }, 1000); // Short delay before response
-        } else {
-          // In group chats, determine if any character should respond to the action
-          // based on the action content and character relationships
-          const actionLower = message.toLowerCase();
-
-          // Check if the action mentions any character by name
-          const mentionedCharacters = chatRoom.characters.filter((char) =>
-            actionLower.includes(char.name.toLowerCase())
-          );
-
-          if (mentionedCharacters.length > 0) {
-            // If characters are mentioned, have one of them respond
-            setTimeout(() => {
-              handleCharacterTurn(mentionedCharacters[0]);
-            }, 1000);
-          } else if (Math.random() < 0.7) {
-            // 70% chance of response to an action
-            // Auto-select a character to respond
-            setTimeout(() => {
-              handleCharacterTurn("auto");
-            }, 1000);
-          }
-        }
+      // Update story tension based on the choice
+      if (intent === "attack" || intent === "danger") {
+        setStoryTension((prev) => Math.min(10, prev + 2));
+      } else if (intent === "resolve" || intent === "calm") {
+        setStoryTension((prev) => Math.max(1, prev - 1));
       }
-
-      return;
     }
 
-    // Add user message to chat
-    const userMessage = {
+    // Hide the story branches
+    setShowStoryBranches(false);
+
+    // Trigger a character response after a short delay
+    setTimeout(() => {
+      if (chatRoom.characters.length > 0) {
+        handleCharacterTurn("auto");
+      }
+    }, 1000);
+  };
+};
+
+// Handle story branch selection from the enhanced branching system
+const handleStoryBranchSelection = (branch) => {
+  // Record the selection in the narrative director
+  if (narrativeDirector) {
+    narrativeDirector.recordBranchSelection(branch);
+  }
+
+  // Add the branch as a system message in the chat
+  setChatHistory([
+    ...chatHistory,
+    {
+      id: Date.now(),
+      message: branch,
+      system: true,
+      isNarration: true,
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+
+  // Record the choice in the narrative state manager
+  if (narrativeManager) {
+    const choiceId = `choice_${Date.now()}`;
+    const intent = determineChoiceIntent(branch);
+    narrativeManager.recordChoice(choiceId, branch, intent);
+
+    // Update story tension based on the choice
+    if (intent === "attack" || intent === "danger") {
+      setStoryTension((prev) => Math.min(10, prev + 2));
+    } else if (intent === "resolve" || intent === "calm") {
+      setStoryTension((prev) => Math.max(1, prev - 1));
+    }
+  }
+
+  // Hide the story branches
+  setShowStoryBranches(false);
+
+  // Trigger a character response after a short delay
+  setTimeout(() => {
+    if (chatRoom.characters.length > 0) {
+      handleCharacterTurn("auto");
+    }
+  }, 1000);
+};
+
+// Helper function to determine emotion changes based on an option
+const determineEmotionChange = (option, character) => {
+  const optionLower = option.toLowerCase();
+  const characterNameLower = character.name.toLowerCase();
+
+  // Check if the option specifically mentions this character
+  const isAboutCharacter = optionLower.includes(characterNameLower);
+
+  // Default emotion change
+  const result = { emotion: null, value: 0 };
+
+  // Determine emotion change based on option content
+  if (
+    optionLower.includes("danger") ||
+    optionLower.includes("threat") ||
+    optionLower.includes("attack") ||
+    optionLower.includes("fear")
+  ) {
+    result.emotion = "tension";
+    result.value = isAboutCharacter ? 3 : 1;
+  } else if (
+    optionLower.includes("reveal") ||
+    optionLower.includes("secret") ||
+    optionLower.includes("discover") ||
+    optionLower.includes("learn")
+  ) {
+    result.emotion = "trust";
+    result.value = isAboutCharacter ? 2 : 1;
+  } else if (
+    optionLower.includes("joke") ||
+    optionLower.includes("laugh") ||
+    optionLower.includes("funny") ||
+    optionLower.includes("amuse")
+  ) {
+    result.emotion = "humor";
+    result.value = 2;
+  }
+
+  return result;
+};
+
+// Helper function to handle character response generation
+const handleCharacterResponse = (character, userMessage) => {
+  if (!character || !userMessage) return;
+
+  try {
+    // Get character with current mood
+    const characterWithCurrentMood = {
+      ...character,
+      mood:
+        getMoodState(moodStates, character.name, character)?.currentMood ||
+        character.mood,
+    };
+
+    // Generate character-specific writing instructions based on story arc
+    let responseInstructions = { ...writingInstructions };
+    if (storyArc) {
+      responseInstructions = generateWritingInstructions(storyArc, character);
+    }
+
+    // Limit context to recent messages for more focused responses
+    const limitedContext = chatHistory.slice(-6);
+
+    // Generate the response
+    let response;
+    try {
+      // Record this character's turn in the tracker
+      const isBattleScenario = detectBattleScenario(chatRoom, chatHistory);
+      turnTracker.recordTurn(character.name, "dialogue", {
+        isBattle: isBattleScenario,
+      });
+
+      // Pass writing instructions, chatRoom, and relationships to the response generator
+      response = generateCharacterResponse(
+        characterWithCurrentMood,
+        userMessage.message,
+        limitedContext,
+        responseInstructions,
+        chatRoom,
+        relationships
+      );
+    } catch (error) {
+      console.error("Error generating character response:", error);
+
+      // Use character-specific fallback instead of generic message
+      const isBattleScenario = detectBattleScenario(chatRoom, chatHistory);
+      const context = isBattleScenario ? "battle" : "conversation";
+
+      // Check for romantic/inappropriate context in the user message
+      const userMessageLower = userMessage.message.toLowerCase();
+      const hasRomanticContext =
+        userMessageLower.includes("love") ||
+        userMessageLower.includes("kiss") ||
+        userMessageLower.includes("hug") ||
+        userMessageLower.includes("beautiful") ||
+        userMessageLower.includes("marry") ||
+        userMessageLower.includes("date") ||
+        userMessageLower.includes("come here") ||
+        userMessageLower.includes("touch") ||
+        userMessageLower.includes("hold") ||
+        userMessageLower.includes("feel") ||
+        userMessageLower.includes("heart") ||
+        userMessageLower.includes("together") ||
+        userMessageLower.includes("want you");
+
+      // Use romantic context if detected for fantasy characters
+      const effectiveContext =
+        hasRomanticContext && character.type === "fantasy"
+          ? "romantic"
+          : context;
+
+      response = generateCharacterFallback(
+        character,
+        effectiveContext,
+        userMessage.message
+      );
+    }
+
+    // Add the response to chat history
+    setChatHistory((prev) => [
+      ...prev,
+      {
+        id: Date.now() + Math.random(),
+        speaker: character.name,
+        character: character,
+        message: response,
+        isUser: false,
+        timestamp: new Date().toISOString(),
+        replyTo: userMessage.id,
+        writingInstructions: responseInstructions,
+      },
+    ]);
+
+    // Add a follow-up action with some probability
+    const actionChance = 0.3; // 30% chance of adding an action
+    if (Math.random() < actionChance) {
+      setTimeout(() => {
+        try {
+          // Default generic actions for any character type
+          let actions = [
+            `*${character.name} nods thoughtfully*`,
+            `*${character.name} gestures expressively*`,
+            `*${character.name} raises an eyebrow*`,
+            `*${character.name} glances around*`,
+            `*${character.name} shifts position slightly*`,
+            `*${character.name} considers for a moment*`,
+          ];
+
+          // Add character-type specific actions if available
+          if (character.type === "fantasy") {
+            actions = [
+              `*${character.name} traces a mystical symbol in the air*`,
+              `*${character.name} adjusts their magical artifacts*`,
+              `*${character.name} whispers an ancient incantation*`,
+              `*${character.name} studies an ancient text or rune*`,
+              `*${character.name} senses magical energies in the vicinity*`,
+            ];
+          } else if (character.type === "superhero") {
+            actions = [
+              `*${character.name} checks a communication device*`,
+              `*${character.name} adjusts their costume slightly*`,
+              `*${character.name} scans the environment for threats*`,
+              `*${character.name} demonstrates a small use of their powers*`,
+              `*${character.name} strikes a confident pose*`,
+            ];
+          }
+
+          // Select a random action
+          const action = actions[Math.floor(Math.random() * actions.length)];
+
+          // Add the action to chat history
+          setChatHistory((prev) => [
+            ...prev,
+            {
+              id: Date.now() + Math.random(),
+              speaker: character.name,
+              character: character,
+              message: action,
+              isUser: false,
+              isAction: true,
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+        } catch (error) {
+          console.error("Error generating character action:", error);
+        }
+      }, 1000 + Math.random() * 2000); // Add action 1-3 seconds after the message
+    }
+
+    // In one-on-one chats, sometimes have the character continue the conversation
+    const isOneOnOneChat = chatRoom.characters.length === 1;
+    if (isOneOnOneChat && Math.random() < 0.4) {
+      // 40% chance of follow-up
+      setTimeout(() => {
+        handleCharacterTurn(character);
+      }, 3000 + Math.random() * 3000); // 3-6 second delay before follow-up
+    }
+
+    setIsTyping(false);
+    setTypingCharacter(null);
+  } catch (error) {
+    console.error("Error in handleCharacterResponse:", error);
+    setIsTyping(false);
+    setTypingCharacter(null);
+  }
+};
+
+// Helper function to determine the most appropriate character to respond
+const determineRespondingCharacter = (option, characters) => {
+  if (!characters || characters.length === 0) {
+    return null;
+  }
+
+  const optionLower = option.toLowerCase();
+
+  // Check if the option specifically mentions a character
+  for (const character of characters) {
+    if (optionLower.includes(character.name.toLowerCase())) {
+      return character;
+    }
+  }
+
+  // Otherwise, choose based on the type of option
+  if (
+    optionLower.includes("danger") ||
+    optionLower.includes("threat") ||
+    optionLower.includes("attack") ||
+    optionLower.includes("combat")
+  ) {
+    // Find the most combat-oriented character
+    return characters.sort((a, b) => {
+      const aRelevance =
+        (a.personality?.confidence || 5) + (a.personality?.analytical || 5);
+      const bRelevance =
+        (b.personality?.confidence || 5) + (b.personality?.analytical || 5);
+      return bRelevance - aRelevance;
+    })[0];
+  }
+
+  if (
+    optionLower.includes("magic") ||
+    optionLower.includes("spell") ||
+    optionLower.includes("mystical") ||
+    optionLower.includes("energy")
+  ) {
+    // Find the most magical character
+    const magicalCharacter = characters.find(
+      (c) =>
+        c.type === "fantasy" ||
+        (c.description && c.description.toLowerCase().includes("magic"))
+    );
+
+    return (
+      magicalCharacter ||
+      characters[Math.floor(Math.random() * characters.length)]
+    );
+  }
+
+  if (
+    optionLower.includes("clue") ||
+    optionLower.includes("mystery") ||
+    optionLower.includes("investigate") ||
+    optionLower.includes("discover")
+  ) {
+    // Find the most analytical character
+    return characters.sort((a, b) => {
+      return (
+        (b.personality?.analytical || 5) - (a.personality?.analytical || 5)
+      );
+    })[0];
+  }
+
+  // Default to random selection
+  return characters[Math.floor(Math.random() * characters.length)];
+};
+
+// Apply custom "What happens next?" option
+const applyCustomNextOption = () => {
+  if (!customNextOption.trim()) return;
+
+  applyNextOption(customNextOption);
+  setCustomNextOption("");
+};
+
+// Handle key press in the message input
+const handleKeyPress = (e) => {
+  // Send message on Enter (without Shift)
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    handleSendMessage();
+  }
+};
+
+const handleSendMessage = () => {
+  if (!message.trim() || !activeCharacter) return;
+
+  // Reset waiting for user input state
+  if (waitingForUserInput) {
+    setWaitingForUserInput(false);
+  }
+
+  // Check if message contains action markers (* at beginning and end)
+  if (message.startsWith("*") && message.endsWith("*")) {
+    // This is an action, not a regular message
+    const actionMessage = {
       id: Date.now(),
       speaker: activeCharacter.name,
       character: activeCharacter,
       message: message,
       isUser: true,
+      isAction: true,
       timestamp: new Date().toISOString(),
     };
 
-    setChatHistory([...chatHistory, userMessage]);
+    setChatHistory([...chatHistory, actionMessage]);
     setMessage("");
 
-    if (!autoRespond) return;
+    // If auto-respond is enabled, trigger character responses to the action
+    if (autoRespond) {
+      // Determine if we're in a one-on-one chat
+      const isOneOnOneChat = chatRoom.characters.length === 1;
 
-    // Determine if we're in a one-on-one chat
-    const isOneOnOneChat = chatRoom.characters.length === 1;
-
-    if (isOneOnOneChat) {
-      // In one-on-one chats, always have the AI character respond
-      setIsTyping(true);
-      setTypingCharacter(chatRoom.characters[0]);
-
-      // Calculate a natural typing delay based on message length
-      const character = chatRoom.characters[0];
-      const thinkingSpeed = character.thinkingSpeed || 1;
-      const baseDelay = 1000 / thinkingSpeed;
-      const messageLength = Math.min(100, message.length);
-      const typingDelay = baseDelay + messageLength * 30;
-
-      setTimeout(() => {
-        handleCharacterResponse(character, userMessage);
-      }, typingDelay);
-
-      return;
-    }
-
-    // For group chats, continue with the existing logic
-    setIsTyping(true);
-
-    // Determine which characters will respond using our new utility
-    // When speaking as "Yourself", all characters can respond
-    const otherCharacters =
-      activeCharacter.name === "Yourself"
-        ? chatRoom.characters
-        : chatRoom.characters.filter(
-            (char) => char.name !== activeCharacter.name
-          );
-
-    // If there are no other characters, don't try to generate responses
-    if (otherCharacters.length === 0) {
-      setIsTyping(false);
-      return;
-    }
-
-    // Check if we're in a battle scenario
-    const isBattleContext = detectBattleScenario(chatRoom, chatHistory);
-
-    // Determine the maximum number of responders based on message length
-    // Longer messages are more likely to get more responses
-    const maxResponders = Math.min(
-      3,
-      Math.max(1, Math.floor(1 + message.length / 100))
-    );
-
-    // Use our utility to determine which characters should respond and in what order
-    const responders = determineResponders(
-      otherCharacters,
-      userMessage,
-      activeCharacter.name,
-      maxResponders
-    );
-
-    // If no responders were determined, pick at least one character
-    if (responders.length === 0) {
-      responders.push(
-        otherCharacters[Math.floor(Math.random() * otherCharacters.length)]
-      );
-    }
-
-    // Generate responses with realistic typing delays
-    let delay = 800; // Initial delay
-
-    responders.forEach((character, index) => {
-      // Calculate typing delay based on message length and character's "thinking speed"
-      const thinkingSpeed = character.thinkingSpeed || 1;
-      const baseDelay = 1000 / thinkingSpeed;
-      const messageLength = Math.max(20, Math.floor(Math.random() * 80)); // Simulate message length
-      const typingDelay = baseDelay + messageLength * 30;
-
-      setTimeout(() => {
-        setTypingCharacter(character);
-
+      if (isOneOnOneChat) {
+        // In one-on-one chats, have the AI character respond to the action
         setTimeout(() => {
+          handleCharacterTurn(chatRoom.characters[0]);
+        }, 1000); // Short delay before response
+      } else {
+        // In group chats, determine if any character should respond to the action
+        // based on the action content and character relationships
+        const actionLower = message.toLowerCase();
+
+        // Check if the action mentions any character by name
+        const mentionedCharacters = chatRoom.characters.filter((char) =>
+          actionLower.includes(char.name.toLowerCase())
+        );
+
+        if (mentionedCharacters.length > 0) {
+          // If characters are mentioned, have one of them respond
+          setTimeout(() => {
+            handleCharacterTurn(mentionedCharacters[0]);
+          }, 1000);
+        } else if (Math.random() < 0.7) {
+          // 70% chance of response to an action
+          // Auto-select a character to respond
+          setTimeout(() => {
+            handleCharacterTurn("auto");
+          }, 1000);
+        }
+      }
+    }
+
+    return;
+  }
+
+  // Add user message to chat
+  const userMessage = {
+    id: Date.now(),
+    speaker: activeCharacter.name,
+    character: activeCharacter,
+    message: message,
+    isUser: true,
+    timestamp: new Date().toISOString(),
+  };
+
+  setChatHistory([...chatHistory, userMessage]);
+  setMessage("");
+
+  // Update character relationships based on the message
+  if (relationshipAnalyzer && chatRoom.characters.length > 1) {
+    const updatedRelationships = relationshipAnalyzer.processMessage(
+      {
+        sender: activeCharacter.name,
+        message: message,
+        timestamp: new Date().toISOString(),
+      },
+      chatRoom.characters
+    );
+
+    if (updatedRelationships) {
+      setRelationships(updatedRelationships);
+
+      // Check for relationship suggestions
+      const suggestions = relationshipAnalyzer.getRelationshipSuggestions(
+        chatRoom.characters
+      );
+      if (suggestions && suggestions.length > 0) {
+        setRelationshipSuggestions(suggestions);
+
+        // Show a relationship suggestion with some probability
+        if (Math.random() < 0.3) {
+          // 30% chance
+          setShowRelationshipSuggestion(true);
+
+          // Hide suggestion after 10 seconds
+          setTimeout(() => {
+            setShowRelationshipSuggestion(false);
+          }, 10000);
+        }
+      }
+    }
+  }
+
+  // Process message for memory extraction
+  if (memoryManager) {
+    // Extract memories from the message
+    const extractedMemories = memoryManager.processMessage(
+      userMessage,
+      chatHistory.slice(-15) // Process with recent context
+    );
+
+    // Update memories state if new memories were extracted
+    if (extractedMemories && extractedMemories.length > 0) {
+      setMemories(memoryManager.getAllMemories());
+
+      // Show memory recall notification with some probability
+      if (Math.random() < 0.2 && extractedMemories[0].importance >= 7) {
+        // 20% chance for important memories
+        setRecalledMemory(extractedMemories[0]);
+        setShowMemoryRecall(true);
+
+        // Hide recall notification after 8 seconds
+        setTimeout(() => {
+          setShowMemoryRecall(false);
+        }, 8000);
+      }
+    }
+  }
+
+  if (!autoRespond) return;
+
+  // Determine if we're in a one-on-one chat
+  const isOneOnOneChat = chatRoom.characters.length === 1;
+
+  if (isOneOnOneChat) {
+    // In one-on-one chats, always have the AI character respond
+    setIsTyping(true);
+    setTypingCharacter(chatRoom.characters[0]);
+
+    // Calculate a natural typing delay based on message length
+    const character = chatRoom.characters[0];
+    const thinkingSpeed = character.thinkingSpeed || 1;
+    const baseDelay = 1000 / thinkingSpeed;
+    const messageLength = Math.min(100, message.length);
+    const typingDelay = baseDelay + messageLength * 30;
+
+    setTimeout(() => {
+      handleCharacterResponse(character, userMessage);
+    }, typingDelay);
+
+    return;
+  }
+
+  // For group chats, continue with the existing logic
+  setIsTyping(true);
+
+  // Determine which characters will respond using our new utility
+  // When speaking as "Yourself", all characters can respond
+  const otherCharacters =
+    activeCharacter.name === "Yourself"
+      ? chatRoom.characters
+      : chatRoom.characters.filter(
+          (char) => char.name !== activeCharacter.name
+        );
+
+  // If there are no other characters, don't try to generate responses
+  if (otherCharacters.length === 0) {
+    setIsTyping(false);
+    return;
+  }
+
+  // Check if we're in a battle scenario
+  const isBattleContext = detectBattleScenario(chatRoom, chatHistory);
+
+  // Determine the maximum number of responders based on message length
+  // Longer messages are more likely to get more responses
+  const maxResponders = Math.min(
+    3,
+    Math.max(1, Math.floor(1 + message.length / 100))
+  );
+
+  // Use our utility to determine which characters should respond and in what order
+  const responders = determineResponders(
+    otherCharacters,
+    userMessage,
+    activeCharacter.name,
+    maxResponders
+  );
+
+  // If no responders were determined, pick at least one character
+  if (responders.length === 0) {
+    responders.push(
+      otherCharacters[Math.floor(Math.random() * otherCharacters.length)]
+    );
+  }
+
+  // Generate responses with realistic typing delays
+  let delay = 800; // Initial delay
+
+  responders.forEach((character, index) => {
+    // Calculate typing delay based on message length and character's "thinking speed"
+    const thinkingSpeed = character.thinkingSpeed || 1;
+    const baseDelay = 1000 / thinkingSpeed;
+    const messageLength = Math.max(20, Math.floor(Math.random() * 80)); // Simulate message length
+    const typingDelay = baseDelay + messageLength * 30;
+
+    setTimeout(() => {
+      setTypingCharacter(character);
+
+      setTimeout(() => {
+        try {
+          // Determine if this should be an action or a regular response
+          const shouldIncludeAction = Math.random() > 0.7; // 30% chance of including an action
+
+          // Generate the character's response with error handling
+          let response;
           try {
-            // Determine if this should be an action or a regular response
-            const shouldIncludeAction = Math.random() > 0.7; // 30% chance of including an action
+            // Analyze the interaction to update relationship
+            const analysis = analyzeInteraction(userMessage.message);
 
-            // Generate the character's response with error handling
-            let response;
-            try {
-              // Analyze the interaction to update relationship
-              const analysis = analyzeInteraction(userMessage.message);
+            // Update relationship between the responding character and the user's active character
+            if (activeCharacter) {
+              setRelationships((prevRelationships) => {
+                const updatedRelationships = [...prevRelationships];
+                const relationship = getRelationship(
+                  updatedRelationships,
+                  character.name,
+                  activeCharacter.name
+                );
+                const updatedRelationship = updateRelationship(
+                  relationship,
+                  activeCharacter.name,
+                  userMessage.message,
+                  analysis.affinityChange,
+                  analysis.interactionType
+                );
 
-              // Update relationship between the responding character and the user's active character
-              if (activeCharacter) {
-                setRelationships((prevRelationships) => {
-                  const updatedRelationships = [...prevRelationships];
-                  const relationship = getRelationship(
-                    updatedRelationships,
-                    character.name,
-                    activeCharacter.name
-                  );
-                  const updatedRelationship = updateRelationship(
-                    relationship,
-                    activeCharacter.name,
-                    userMessage.message,
-                    analysis.affinityChange,
-                    analysis.interactionType
-                  );
+                // Replace the old relationship with the updated one
+                const index = updatedRelationships.findIndex(
+                  (rel) =>
+                    rel.characters.includes(character.name) &&
+                    rel.characters.includes(activeCharacter.name)
+                );
 
-                  // Replace the old relationship with the updated one
-                  const index = updatedRelationships.findIndex(
-                    (rel) =>
-                      rel.characters.includes(character.name) &&
-                      rel.characters.includes(activeCharacter.name)
-                  );
+                if (index !== -1) {
+                  updatedRelationships[index] = updatedRelationship;
+                }
 
-                  if (index !== -1) {
-                    updatedRelationships[index] = updatedRelationship;
-                  }
+                return updatedRelationships;
+              });
 
-                  return updatedRelationships;
-                });
+              // Update the character's mood based on the interaction
+              setMoodStates((prevMoodStates) => {
+                const updatedMoodStates = [...prevMoodStates];
 
-                // Update the character's mood based on the interaction
-                setMoodStates((prevMoodStates) => {
-                  const updatedMoodStates = [...prevMoodStates];
-
-                  // Get the current mood state
-                  const currentMoodState = getMoodState(
-                    updatedMoodStates,
-                    character.name,
-                    character
-                  );
-
-                  // Create a copy to check if we should announce the change
-                  const previousMoodState = { ...currentMoodState };
-
-                  // Update the mood
-                  const updatedMoodState = updateMood(
-                    currentMoodState,
-                    `interaction with ${activeCharacter.name}`,
-                    analysis.affinityChange,
-                    analysis.interactionType
-                  );
-
-                  // Replace the old mood state with the updated one
-                  const index = updatedMoodStates.findIndex(
-                    (state) => state.characterId === character.name
-                  );
-
-                  if (index !== -1) {
-                    updatedMoodStates[index] = updatedMoodState;
-                  }
-
-                  // Check if we should announce the mood change
-                  if (
-                    shouldAnnounceMoodChange(
-                      previousMoodState,
-                      updatedMoodState
-                    )
-                  ) {
-                    // Add a system message announcing the mood change
-                    const moodChangeMessage = getMoodChangeDescription(
-                      previousMoodState,
-                      updatedMoodState
-                    );
-
-                    setTimeout(() => {
-                      setChatHistory((prev) => [
-                        ...prev,
-                        {
-                          id: Date.now() + Math.random(),
-                          message: moodChangeMessage,
-                          system: true,
-                          timestamp: new Date().toISOString(),
-                        },
-                      ]);
-                    }, 1000);
-                  }
-
-                  return updatedMoodStates;
-                });
-              }
-
-              // Generate character-specific writing instructions based on story arc
-              let responseInstructions = { ...writingInstructions };
-
-              // If we have a story arc, use it to generate character-specific instructions
-              if (storyArc) {
-                responseInstructions = generateWritingInstructions(
-                  storyArc,
+                // Get the current mood state
+                const currentMoodState = getMoodState(
+                  updatedMoodStates,
+                  character.name,
                   character
                 );
 
-                // Preserve any user-defined writing instructions
-                if (writingInstructions.writingStyle !== "balanced") {
-                  responseInstructions.writingStyle =
-                    writingInstructions.writingStyle;
-                }
-                if (writingInstructions.responseLength !== "medium") {
-                  responseInstructions.responseLength =
-                    writingInstructions.responseLength;
-                }
-                if (writingInstructions.characterReminders) {
-                  responseInstructions.characterReminders +=
-                    "\n" + writingInstructions.characterReminders;
-                }
-                if (writingInstructions.generalNotes) {
-                  responseInstructions.generalNotes +=
-                    "\n" + writingInstructions.generalNotes;
-                }
-              }
+                // Create a copy to check if we should announce the change
+                const previousMoodState = { ...currentMoodState };
 
-              // Get the character's current mood
-              const characterMood = getMoodState(
-                moodStates,
-                character.name,
+                // Update the mood
+                const updatedMoodState = updateMood(
+                  currentMoodState,
+                  `interaction with ${activeCharacter.name}`,
+                  analysis.affinityChange,
+                  analysis.interactionType
+                );
+
+                // Replace the old mood state with the updated one
+                const index = updatedMoodStates.findIndex(
+                  (state) => state.characterId === character.name
+                );
+
+                if (index !== -1) {
+                  updatedMoodStates[index] = updatedMoodState;
+                }
+
+                // Check if we should announce the mood change
+                if (
+                  shouldAnnounceMoodChange(previousMoodState, updatedMoodState)
+                ) {
+                  // Add a system message announcing the mood change
+                  const moodChangeMessage = getMoodChangeDescription(
+                    previousMoodState,
+                    updatedMoodState
+                  );
+
+                  setTimeout(() => {
+                    setChatHistory((prev) => [
+                      ...prev,
+                      {
+                        id: Date.now() + Math.random(),
+                        message: moodChangeMessage,
+                        system: true,
+                        timestamp: new Date().toISOString(),
+                      },
+                    ]);
+                  }, 1000);
+                }
+
+                return updatedMoodStates;
+              });
+            }
+
+            // Generate character-specific writing instructions based on story arc
+            let responseInstructions = { ...writingInstructions };
+
+            // If we have a story arc, use it to generate character-specific instructions
+            if (storyArc) {
+              responseInstructions = generateWritingInstructions(
+                storyArc,
                 character
               );
 
-              // Create a copy of the character with the current mood
-              const characterWithCurrentMood = {
-                ...character,
-                mood: characterMood?.currentMood || character.mood,
-              };
-
-              // Pass writing instructions, chatRoom, and relationships to the response generator
-              response = generateCharacterResponse(
-                characterWithCurrentMood,
-                userMessage.message,
-                chatHistory,
-                responseInstructions,
-                chatRoom,
-                relationships
-              );
-
-              // Check if the response indicates the AI is unsure or off-topic
-              const offTopicIndicators = [
-                "I'm not sure how to respond to that",
-                "Let's try a different topic",
-                "I don't know what to say about that",
-                "I'm not sure I understand",
-                "Let's talk about something else",
-                "This requires careful analysis",
-                "I need to consider the facts",
-                "There are several factors to consider",
-                "I'm processing the information",
-                "Let me think through this logically",
-                "I'm examining the different angles",
-                "I need a moment to process",
-                "I'm not certain how to interpret",
-                "This is a complex matter",
-                "I need to analyze this further",
-              ];
-
-              const isOffTopic = offTopicIndicators.some((indicator) =>
-                response.toLowerCase().includes(indicator.toLowerCase())
-              );
-
-              // If the response seems off-topic, use a character-specific fallback
-              if (isOffTopic) {
-                console.log(
-                  `Detected off-topic response from ${characterWithCurrentMood.name}, using character-specific fallback`
-                );
-                const context = isBattleContext ? "battle" : "conversation";
-
-                // Check for romantic/inappropriate context in the user message
-                const userMessageLower = userMessage.message.toLowerCase();
-                const hasRomanticContext =
-                  userMessageLower.includes("love") ||
-                  userMessageLower.includes("kiss") ||
-                  userMessageLower.includes("hug") ||
-                  userMessageLower.includes("beautiful") ||
-                  userMessageLower.includes("marry") ||
-                  userMessageLower.includes("date") ||
-                  userMessageLower.includes("come here") ||
-                  userMessageLower.includes("touch") ||
-                  userMessageLower.includes("hold") ||
-                  userMessageLower.includes("feel") ||
-                  userMessageLower.includes("heart") ||
-                  userMessageLower.includes("together") ||
-                  userMessageLower.includes("want you");
-
-                // Use romantic context if detected for fantasy characters
-                const effectiveContext =
-                  hasRomanticContext &&
-                  characterWithCurrentMood.type === "fantasy"
-                    ? "romantic"
-                    : context;
-
-                response = generateCharacterFallback(
-                  characterWithCurrentMood,
-                  effectiveContext,
-                  userMessage.message
-                );
+              // Preserve any user-defined writing instructions
+              if (writingInstructions.writingStyle !== "balanced") {
+                responseInstructions.writingStyle =
+                  writingInstructions.writingStyle;
               }
-            } catch (error) {
-              console.error("Error generating character response:", error);
-              // Use a character-specific fallback response instead of a generic one
+              if (writingInstructions.responseLength !== "medium") {
+                responseInstructions.responseLength =
+                  writingInstructions.responseLength;
+              }
+              if (writingInstructions.characterReminders) {
+                responseInstructions.characterReminders +=
+                  "\n" + writingInstructions.characterReminders;
+              }
+              if (writingInstructions.generalNotes) {
+                responseInstructions.generalNotes +=
+                  "\n" + writingInstructions.generalNotes;
+              }
+            }
+
+            // Get the character's current mood
+            const characterMood = getMoodState(
+              moodStates,
+              character.name,
+              character
+            );
+
+            // Create a copy of the character with the current mood
+            const characterWithCurrentMood = {
+              ...character,
+              mood: characterMood?.currentMood || character.mood,
+            };
+
+            // Pass writing instructions, chatRoom, and relationships to the response generator
+            response = generateCharacterResponse(
+              characterWithCurrentMood,
+              userMessage.message,
+              chatHistory,
+              responseInstructions,
+              chatRoom,
+              relationships
+            );
+
+            // Check if the response indicates the AI is unsure or off-topic
+            const offTopicIndicators = [
+              "I'm not sure how to respond to that",
+              "Let's try a different topic",
+              "I don't know what to say about that",
+              "I'm not sure I understand",
+              "Let's talk about something else",
+              "This requires careful analysis",
+              "I need to consider the facts",
+              "There are several factors to consider",
+              "I'm processing the information",
+              "Let me think through this logically",
+              "I'm examining the different angles",
+              "I need a moment to process",
+              "I'm not certain how to interpret",
+              "This is a complex matter",
+              "I need to analyze this further",
+            ];
+
+            const isOffTopic = offTopicIndicators.some((indicator) =>
+              response.toLowerCase().includes(indicator.toLowerCase())
+            );
+
+            // If the response seems off-topic, use a character-specific fallback
+            if (isOffTopic) {
+              console.log(
+                `Detected off-topic response from ${characterWithCurrentMood.name}, using character-specific fallback`
+              );
               const context = isBattleContext ? "battle" : "conversation";
+
+              // Check for romantic/inappropriate context in the user message
+              const userMessageLower = userMessage.message.toLowerCase();
+              const hasRomanticContext =
+                userMessageLower.includes("love") ||
+                userMessageLower.includes("kiss") ||
+                userMessageLower.includes("hug") ||
+                userMessageLower.includes("beautiful") ||
+                userMessageLower.includes("marry") ||
+                userMessageLower.includes("date") ||
+                userMessageLower.includes("come here") ||
+                userMessageLower.includes("touch") ||
+                userMessageLower.includes("hold") ||
+                userMessageLower.includes("feel") ||
+                userMessageLower.includes("heart") ||
+                userMessageLower.includes("together") ||
+                userMessageLower.includes("want you");
+
+              // Use romantic context if detected for fantasy characters
+              const effectiveContext =
+                hasRomanticContext &&
+                characterWithCurrentMood.type === "fantasy"
+                  ? "romantic"
+                  : context;
+
               response = generateCharacterFallback(
                 characterWithCurrentMood,
-                context,
+                effectiveContext,
                 userMessage.message
               );
             }
-
-            // Sanitize any template placeholders in the response
-            let sanitizedResponse = response;
-            if (sanitizedResponse.includes("}")) {
-              sanitizedResponse = sanitizedResponse.replace(/\{[^}]*\}/g, "");
-            }
-
-            // Create a clean copy of the character to avoid reference issues
-            const characterCopy = { ...character };
-
-            // Add the response to chat history
-            setChatHistory((prev) => [
-              ...prev,
-              {
-                id: Date.now() + Math.random(),
-                speaker: characterCopy.name,
-                character: characterCopy,
-                message: sanitizedResponse,
-                isUser: false,
-                timestamp: new Date().toISOString(),
-                replyTo: userMessage.id,
-                writingInstructions: storyArc
-                  ? generateWritingInstructions(storyArc, characterCopy)
-                  : writingInstructions,
-              },
-            ]);
-
-            // If we should include an action, add it after a short delay
-            if (shouldIncludeAction) {
-              setTimeout(() => {
-                try {
-                  // Generate a random action based on character type and personality
-                  const actions = [
-                    `*${character.name} nods thoughtfully*`,
-                    `*${character.name} gestures expressively*`,
-                    `*${character.name} leans forward with interest*`,
-                    `*${character.name} raises an eyebrow*`,
-                    `*${character.name} smiles slightly*`,
-                    `*${character.name} crosses arms*`,
-                    `*${character.name} glances around the room*`,
-                    `*${character.name} adjusts posture*`,
-                  ];
-
-                  // Add character-specific actions based on type
-                  if (character.type === "fantasy") {
-                    actions.push(
-                      `*${character.name} traces a mystical symbol in the air*`,
-                      `*${character.name} adjusts their magical artifacts*`,
-                      `*${character.name} whispers an ancient incantation*`
-                    );
-                  } else if (character.type === "scifi") {
-                    actions.push(
-                      `*${character.name} checks a holographic display*`,
-                      `*${character.name} adjusts their tech gear*`,
-                      `*${character.name} scans the environment with a device*`
-                    );
-                  }
-
-                  // Select a random action
-                  const action =
-                    actions[Math.floor(Math.random() * actions.length)];
-
-                  // Create a clean copy of the character to avoid reference issues
-                  const characterCopy = { ...character };
-
-                  // Sanitize any template placeholders in the action
-                  let sanitizedAction = action;
-                  if (sanitizedAction.includes("}")) {
-                    sanitizedAction = sanitizedAction.replace(/\{[^}]*\}/g, "");
-                  }
-
-                  // Add the action to chat history
-                  setChatHistory((prev) => [
-                    ...prev,
-                    {
-                      id: Date.now() + Math.random(),
-                      speaker: characterCopy.name,
-                      character: characterCopy,
-                      message: sanitizedAction,
-                      isUser: false,
-                      isAction: true,
-                      timestamp: new Date().toISOString(),
-                    },
-                  ]);
-                } catch (error) {
-                  console.error("Error generating character action:", error);
-                }
-              }, 1000 + Math.random() * 2000); // Add action 1-3 seconds after the message
-            }
           } catch (error) {
-            console.error("Error in character response generation:", error);
-            if (index === responders.length - 1) {
-              setIsTyping(false);
-              setTypingCharacter(null);
-            }
+            console.error("Error generating character response:", error);
+            // Use a character-specific fallback response instead of a generic one
+            const context = isBattleContext ? "battle" : "conversation";
+            response = generateCharacterFallback(
+              characterWithCurrentMood,
+              context,
+              userMessage.message
+            );
           }
 
+          // Sanitize any template placeholders in the response
+          let sanitizedResponse = response;
+          if (sanitizedResponse.includes("}")) {
+            sanitizedResponse = sanitizedResponse.replace(/\{[^}]*\}/g, "");
+          }
+
+          // Create a clean copy of the character to avoid reference issues
+          const characterCopy = { ...character };
+
+          // Add the response to chat history
+          setChatHistory((prev) => [
+            ...prev,
+            {
+              id: Date.now() + Math.random(),
+              speaker: characterCopy.name,
+              character: characterCopy,
+              message: sanitizedResponse,
+              isUser: false,
+              timestamp: new Date().toISOString(),
+              replyTo: userMessage.id,
+              writingInstructions: storyArc
+                ? generateWritingInstructions(storyArc, characterCopy)
+                : writingInstructions,
+            },
+          ]);
+
+          // If we should include an action, add it after a short delay
+          if (shouldIncludeAction) {
+            setTimeout(() => {
+              try {
+                // Generate a random action based on character type and personality
+                const actions = [
+                  `*${character.name} nods thoughtfully*`,
+                  `*${character.name} gestures expressively*`,
+                  `*${character.name} leans forward with interest*`,
+                  `*${character.name} raises an eyebrow*`,
+                  `*${character.name} smiles slightly*`,
+                  `*${character.name} crosses arms*`,
+                  `*${character.name} glances around the room*`,
+                  `*${character.name} adjusts posture*`,
+                ];
+
+                // Add character-specific actions based on type
+                if (character.type === "fantasy") {
+                  actions.push(
+                    `*${character.name} traces a mystical symbol in the air*`,
+                    `*${character.name} adjusts their magical artifacts*`,
+                    `*${character.name} whispers an ancient incantation*`
+                  );
+                } else if (character.type === "scifi") {
+                  actions.push(
+                    `*${character.name} checks a holographic display*`,
+                    `*${character.name} adjusts their tech gear*`,
+                    `*${character.name} scans the environment with a device*`
+                  );
+                }
+
+                // Select a random action
+                const action =
+                  actions[Math.floor(Math.random() * actions.length)];
+
+                // Create a clean copy of the character to avoid reference issues
+                const characterCopy = { ...character };
+
+                // Sanitize any template placeholders in the action
+                let sanitizedAction = action;
+                if (sanitizedAction.includes("}")) {
+                  sanitizedAction = sanitizedAction.replace(/\{[^}]*\}/g, "");
+                }
+
+                // Add the action to chat history
+                setChatHistory((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now() + Math.random(),
+                    speaker: characterCopy.name,
+                    character: characterCopy,
+                    message: sanitizedAction,
+                    isUser: false,
+                    isAction: true,
+                    timestamp: new Date().toISOString(),
+                  },
+                ]);
+              } catch (error) {
+                console.error("Error generating character action:", error);
+              }
+            }, 1000 + Math.random() * 2000); // Add action 1-3 seconds after the message
+          }
+        } catch (error) {
+          console.error("Error in character response generation:", error);
           if (index === responders.length - 1) {
             setIsTyping(false);
             setTypingCharacter(null);
           }
-        }, typingDelay);
-      }, delay);
+        }
 
-      // Add delay for next character (varies based on message complexity)
-      delay += typingDelay + Math.floor(Math.random() * 2000);
-    });
+        if (index === responders.length - 1) {
+          setIsTyping(false);
+          setTypingCharacter(null);
+        }
+      }, typingDelay);
+    }, delay);
+
+    // Add delay for next character (varies based on message complexity)
+    delay += typingDelay + Math.floor(Math.random() * 2000);
+  });
+};
+
+// Get character avatar component
+const getCharacterAvatar = (character) => {
+  if (!character) return null;
+
+  // Special case for "Yourself" character
+  if (character && character.name === "Yourself") {
+    return (
+      <div className="bg-blue-600 rounded-full w-10 h-10 flex items-center justify-center text-white font-bold border-2 border-background shadow-sm">
+        YOU
+      </div>
+    );
+  }
+
+  // Use the CharacterAvatar component for all other characters
+  return <CharacterAvatar character={character} />;
+};
+
+// Format timestamp
+const formatTime = (timestamp) => {
+  if (!timestamp) return "";
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+};
+
+// Get quick actions for the current scenario from repository or defaults
+const getScenarioQuickActionsFromRepo = (scenarioTitle, scenarioTheme) => {
+  // Get scenario data from the repository
+  const scenarioData = getScenarioData(scenarioTitle, scenarioTheme);
+
+  // If we have scenario data with quick actions, return them
+  if (
+    scenarioData &&
+    scenarioData.quickActions &&
+    scenarioData.quickActions.length > 0
+  ) {
+    return scenarioData.quickActions;
+  }
+
+  // Default quick actions based on theme
+  const defaultActions = {
+    superhero: [
+      "Shield civilians",
+      "Attack enemy",
+      "Coordinate team",
+      "Use powers",
+    ],
+    fantasy: [
+      "Cast spell",
+      "Draw weapon",
+      "Check surroundings",
+      "Speak to ally",
+    ],
+    scifi: ["Scan area", "Check systems", "Draw weapon", "Access terminal"],
+    default: [
+      "Look around",
+      "Check inventory",
+      "Approach character",
+      "Take cover",
+    ],
   };
 
-  // Get character avatar component
-  const getCharacterAvatar = (character) => {
-    if (!character) return null;
+  return defaultActions[scenarioTheme] || defaultActions.default;
+};
 
-    // Special case for "Yourself" character
-    if (character && character.name === "Yourself") {
-      return (
-        <div className="bg-blue-600 rounded-full w-10 h-10 flex items-center justify-center text-white font-bold border-2 border-background shadow-sm">
-          YOU
-        </div>
-      );
-    }
-
-    // Use the CharacterAvatar component for all other characters
-    return <CharacterAvatar character={character} />;
-  };
-
-  // Format timestamp
-  const formatTime = (timestamp) => {
-    if (!timestamp) return "";
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
-  // Get quick actions for the current scenario from repository or defaults
-  const getScenarioQuickActionsFromRepo = (scenarioTitle, scenarioTheme) => {
-    // Get scenario data from the repository
-    const scenarioData = getScenarioData(scenarioTitle, scenarioTheme);
-
-    // If we have scenario data with quick actions, return them
-    if (
-      scenarioData &&
-      scenarioData.quickActions &&
-      scenarioData.quickActions.length > 0
-    ) {
-      return scenarioData.quickActions;
-    }
-
-    // Default quick actions based on theme
-    const defaultActions = {
-      superhero: [
-        "Shield civilians",
-        "Attack enemy",
-        "Coordinate team",
-        "Use powers",
-      ],
-      fantasy: [
-        "Cast spell",
-        "Draw weapon",
-        "Check surroundings",
-        "Speak to ally",
-      ],
-      scifi: ["Scan area", "Check systems", "Draw weapon", "Access terminal"],
-      default: [
-        "Look around",
-        "Check inventory",
-        "Approach character",
-        "Take cover",
-      ],
-    };
-
-    return defaultActions[scenarioTheme] || defaultActions.default;
-  };
-
+// Render the chat room
+const renderChatRoom = () => {
   return (
     <div className="flex flex-col h-screen">
+      {/* Story branch selector */}
+      {showStoryBranches && (
+        <StoryBranchSelector
+          branches={storyBranches}
+          onSelectBranch={handleStoryBranchSelection}
+          onDismiss={() => setShowStoryBranches(false)}
+          scenarioType={chatRoom?.theme || "adventure"}
+        />
+      )}
+
+      {/* Relationship graph modal */}
+      {showRelationshipGraph && (
+        <RelationshipGraph
+          relationships={relationships}
+          characters={chatRoom.characters}
+          onClose={() => setShowRelationshipGraph(false)}
+          onSelectRelationship={(relationship) => {
+            // Handle relationship selection if needed
+            console.log("Selected relationship:", relationship);
+          }}
+        />
+      )}
+
+      {/* Relationship suggestion notification */}
+      {showRelationshipSuggestion && relationshipSuggestions.length > 0 && (
+        <div className="fixed bottom-24 right-4 max-w-xs bg-card border rounded-lg shadow-lg p-3 z-40 animate-fade-in">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center">
+              <Users className="h-4 w-4 text-primary mr-2" />
+              <span className="text-sm font-medium">Relationship Insight</span>
+            </div>
+            <button
+              onClick={() => setShowRelationshipSuggestion(false)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="text-sm mt-2 text-muted-foreground">
+            {relationshipSuggestions[0].suggestion}
+          </p>
+          <div className="mt-2 flex justify-end">
+            <button
+              onClick={() => {
+                setShowRelationshipSuggestion(false);
+                setShowRelationshipGraph(true);
+              }}
+              className="text-xs text-primary hover:text-primary/80"
+            >
+              View Relationships
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Memory recall notification */}
+      {showMemoryRecall && recalledMemory && (
+        <div className="fixed bottom-24 left-4 max-w-xs bg-card border rounded-lg shadow-lg p-3 z-40 animate-fade-in">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center">
+              <Brain className="h-4 w-4 text-primary mr-2" />
+              <span className="text-sm font-medium">Memory Recalled</span>
+            </div>
+            <button
+              onClick={() => setShowMemoryRecall(false)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="text-sm mt-2 text-muted-foreground">
+            {recalledMemory.content}
+          </p>
+          <div className="mt-2 flex justify-end">
+            <button
+              onClick={() => {
+                setShowMemoryRecall(false);
+                setShowMemoryPanel(true);
+              }}
+              className="text-xs text-primary hover:text-primary/80"
+            >
+              View Memories
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Memory panel */}
+      {showMemoryPanel && (
+        <MemoryPanel
+          memories={memories}
+          onCreateMemory={(content, speaker, type, importance) => {
+            if (memoryManager) {
+              const newMemory = memoryManager.createMemory(
+                content,
+                speaker,
+                type,
+                importance
+              );
+              if (newMemory) {
+                setMemories(memoryManager.getAllMemories());
+              }
+            }
+          }}
+          onDeleteMemory={(memoryId) => {
+            if (memoryManager) {
+              const deleted = memoryManager.deleteMemory(memoryId);
+              if (deleted) {
+                setMemories(memoryManager.getAllMemories());
+              }
+            }
+          }}
+          onUpdateMemory={(memoryId, importance) => {
+            if (memoryManager) {
+              const updated = memoryManager.updateMemoryImportance(
+                memoryId,
+                importance
+              );
+              if (updated) {
+                setMemories(memoryManager.getAllMemories());
+              }
+            }
+          }}
+          onImportMemories={(json) => {
+            if (memoryManager) {
+              const imported = memoryManager.importMemories(json);
+              if (imported) {
+                setMemories(memoryManager.getAllMemories());
+              }
+            }
+          }}
+          onExportMemories={() => {
+            if (memoryManager) {
+              const json = memoryManager.exportMemories();
+
+              // Create a blob and download it
+              const blob = new Blob([json], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `velora-memories-${chatRoom.name
+                .replace(/\s+/g, "-")
+                .toLowerCase()}-${new Date().toISOString().split("T")[0]}.json`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }
+          }}
+          onClearMemories={() => {
+            if (memoryManager) {
+              memoryManager.clearMemories();
+              setMemories([]);
+            }
+          }}
+          onClose={() => setShowMemoryPanel(false)}
+          onUseMemory={(memory) => {
+            // Add the memory as a system message in the chat
+            setChatHistory([
+              ...chatHistory,
+              {
+                id: Date.now(),
+                message: `Memory: ${memory.content}`,
+                system: true,
+                isNarration: true,
+                timestamp: new Date().toISOString(),
+              },
+            ]);
+            setShowMemoryPanel(false);
+          }}
+          currentContext={memoryContext}
+        />
+      )}
+
       {/* Chat header */}
       <header className="border-b py-2 px-3 md:py-3 md:px-4">
         <div className="container mx-auto flex justify-between items-center">
@@ -4538,6 +5115,23 @@ const ChatRoom = ({
               title="Save Chat"
             >
               <Download className="h-4 w-4 md:h-5 md:w-5" />
+            </button>
+            {chatRoom.characters.length > 1 && (
+              <button
+                onClick={() => setShowRelationshipGraph(true)}
+                className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
+                title="Character Relationships"
+              >
+                <Users className="h-4 w-4 md:h-5 md:w-5" />
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowMemoryPanel(true)}
+              className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
+              title="Memory System"
+            >
+              <Brain className="h-4 w-4 md:h-5 md:w-5" />
             </button>
           </div>
         </div>
@@ -4796,6 +5390,7 @@ const ChatRoom = ({
 
       {/* Chat messages */}
       <div
+        ref={chatContainerRef}
         className="flex-1 overflow-y-auto py-3 px-1 sm:py-4 sm:px-2 md:py-5 md:px-0"
         style={
           chatBackground

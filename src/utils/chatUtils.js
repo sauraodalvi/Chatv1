@@ -2349,6 +2349,9 @@ export const generateCharacterInteraction = (
   // Construct the initial response
   let finalResponse = addFlavor ? `${flavorText}${template}` : template;
 
+  // Check if the message contains a question
+  const hasQuestion = message && message.includes("?");
+
   // Create a simple story arc based on the interaction context
   const simpleStoryArc = {
     theme: type || "general",

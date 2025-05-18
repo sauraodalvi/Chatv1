@@ -7,6 +7,7 @@ import QuickScenarioSelector from "./components/QuickScenarioSelector";
 import ScenarioSelectionStep from "./components/ScenarioSelectionStep";
 import Onboarding from "./components/Onboarding";
 import HowToUse from "./components/HowToUse";
+import DebugPanel from "./components/DebugPanel";
 
 import { ThemeProvider } from "./components/ThemeProvider";
 import {
@@ -42,161 +43,253 @@ function App() {
     console.log("startChat called with:", {
       roomName,
       charactersCount: characters?.length || 0,
-      openingPrompt,
-      background,
-      theme,
+      characterNames: characters
+        ? characters.map((c) => c?.name || "Unnamed").join(", ")
+        : "No characters",
+      openingPrompt: openingPrompt
+        ? openingPrompt.length > 50
+          ? openingPrompt.substring(0, 50) + "..."
+          : openingPrompt
+        : "None",
+      background: background || "None",
+      theme: theme || "None",
     });
 
-    // Validate that we have at least 2 characters
-    if (!characters || characters.length < 2) {
-      alert(
-        "At least 2 characters are required for meaningful conversations. Please select more characters."
-      );
-      return;
-    }
-
-    // If no opening prompt is provided, generate a default one based on the room name
-    const finalPrompt =
-      openingPrompt && openingPrompt.trim()
-        ? openingPrompt
-        : `Welcome to "${roomName}". The scene is set and the characters are ready to interact. What happens next is up to you...`;
-
-    // Create the chat room object
-    const newChatRoom = {
-      name: roomName || "Chat Room",
-      characters: characters,
-      openingPrompt: finalPrompt,
-      background: background,
-      theme: theme,
-      createdAt: new Date().toISOString(),
-    };
-
-    console.log("Setting chatRoom:", newChatRoom);
-    setChatRoom(newChatRoom);
-
-    // Initialize the story arc
-    const initialStoryArc = initializeStoryArc(roomName, finalPrompt, theme);
-    console.log("Setting storyArc:", initialStoryArc);
-    setStoryArc(initialStoryArc);
-
-    // Initialize chat with a system message indicating the start of the conversation
-    // and a first action message if it's the Avengers scenario
-    const initialMessages = [
-      {
-        id: Date.now(),
-        system: true,
-        isNarration: true,
-        message: "The conversation begins...",
-        timestamp: new Date().toISOString(),
-      },
-    ];
-
-    // Get scenario data to check for initial messages
-    const scenarioData = getScenarioData(roomName, theme);
-
-    console.log("Starting chat with scenario:", roomName);
-    console.log(
-      "Characters:",
-      characters.map((c) => c.name)
-    );
-
-    // If we have scenario data with initial messages, add them
-    if (
-      scenarioData &&
-      scenarioData.initialMessages &&
-      scenarioData.initialMessages.length > 0
-    ) {
-      console.log(
-        "Found scenario data with initial messages:",
-        scenarioData.initialMessages.length
-      );
-
-      // Add a narration that sets the scene if provided
-      if (scenarioData.initialNarration) {
-        initialMessages.push({
-          id: Date.now() + 1,
-          system: true,
-          isNarration: true,
-          message: scenarioData.initialNarration,
-          timestamp: new Date(new Date().getTime() + 500).toISOString(),
-        });
+    try {
+      // Validate that characters is an array
+      if (!characters || !Array.isArray(characters)) {
+        console.error("Invalid characters parameter:", characters);
+        alert("Error: Invalid character data. Please try again.");
+        return;
       }
 
-      // Add character messages/actions from the scenario data
-      scenarioData.initialMessages.forEach((msgData, index) => {
-        console.log(`Processing initial message from ${msgData.speaker}`);
+      // Validate that we have at least 2 characters
+      if (characters.length < 2) {
+        console.warn("Not enough characters selected:", characters.length);
+        alert(
+          "At least 2 characters are required for meaningful conversations. Please select more characters."
+        );
+        return;
+      }
 
-        // Find the character - ensure we're using a clean copy to avoid reference issues
-        const characterIndex = characters.findIndex(
-          (char) => char.name === msgData.speaker
+      // Validate that all characters have required properties
+      const invalidCharacters = characters.filter(
+        (char) => !char || typeof char !== "object" || !char.name
+      );
+
+      if (invalidCharacters.length > 0) {
+        console.error("Invalid characters detected:", invalidCharacters);
+        alert(
+          "Some characters have invalid data. Please try again with different characters."
+        );
+        return;
+      }
+
+      // If no opening prompt is provided, generate a default one based on the room name
+      const finalPrompt =
+        openingPrompt && openingPrompt.trim()
+          ? openingPrompt
+          : `Welcome to "${roomName}". The scene is set and the characters are ready to interact. What happens next is up to you...`;
+
+      // Create the chat room object
+      const newChatRoom = {
+        name: roomName || "Chat Room",
+        characters: characters,
+        openingPrompt: finalPrompt,
+        background: background,
+        theme: theme,
+        createdAt: new Date().toISOString(),
+      };
+
+      console.log("Setting chatRoom:", newChatRoom);
+      setChatRoom(newChatRoom);
+
+      // Initialize the story arc
+      console.log("Initializing story arc for:", roomName);
+      const initialStoryArc = initializeStoryArc(roomName, finalPrompt, theme);
+      console.log("Setting storyArc:", initialStoryArc);
+      setStoryArc(initialStoryArc);
+
+      // Initialize chat with a system message indicating the start of the conversation
+      const initialMessages = [
+        {
+          id: Date.now(),
+          system: true,
+          isNarration: true,
+          message: "The conversation begins...",
+          timestamp: new Date().toISOString(),
+        },
+      ];
+
+      // Get scenario data to check for initial messages
+      console.log("Getting scenario data for:", roomName, theme);
+      const scenarioData = getScenarioData(roomName, theme);
+      console.log(
+        "Retrieved scenario data:",
+        scenarioData ? "Found" : "Not found"
+      );
+
+      console.log("Starting chat with scenario:", roomName);
+      console.log(
+        "Characters:",
+        characters.map((c) => c.name)
+      );
+
+      // If we have scenario data with initial messages, add them
+      if (
+        scenarioData &&
+        scenarioData.initialMessages &&
+        Array.isArray(scenarioData.initialMessages) &&
+        scenarioData.initialMessages.length > 0
+      ) {
+        console.log(
+          "Found scenario data with initial messages:",
+          scenarioData.initialMessages.length
         );
 
-        if (characterIndex !== -1) {
+        // Add a narration that sets the scene if provided
+        if (scenarioData.initialNarration) {
           console.log(
-            `Found character ${msgData.speaker} at index ${characterIndex}`
+            "Adding initial narration:",
+            scenarioData.initialNarration.substring(0, 50) + "..."
           );
-          const character = { ...characters[characterIndex] };
+          initialMessages.push({
+            id: Date.now() + 1,
+            system: true,
+            isNarration: true,
+            message: scenarioData.initialNarration,
+            timestamp: new Date(new Date().getTime() + 500).toISOString(),
+          });
+        }
 
-          // Sanitize any template placeholders in the message
-          let sanitizedMessage = msgData.message;
-          if (sanitizedMessage.includes("}")) {
-            sanitizedMessage = sanitizedMessage.replace(/\{[^}]*\}/g, "");
+        // Add character messages/actions from the scenario data
+        scenarioData.initialMessages.forEach((msgData, index) => {
+          if (!msgData || !msgData.speaker) {
+            console.warn(
+              `Skipping invalid message data at index ${index}:`,
+              msgData
+            );
+            return;
           }
 
+          console.log(`Processing initial message from ${msgData.speaker}`);
+
+          // Find the character - ensure we're using a clean copy to avoid reference issues
+          const characterIndex = characters.findIndex(
+            (char) => char && char.name === msgData.speaker
+          );
+
+          if (characterIndex !== -1) {
+            console.log(
+              `Found character ${msgData.speaker} at index ${characterIndex}`
+            );
+            const character = { ...characters[characterIndex] };
+
+            // Sanitize any template placeholders in the message
+            let sanitizedMessage = msgData.message || "";
+            if (sanitizedMessage.includes("}")) {
+              sanitizedMessage = sanitizedMessage.replace(/\{[^}]*\}/g, "");
+            }
+
+            try {
+              // Generate appropriate writing instructions
+              const instructions = generateWritingInstructions(
+                initialStoryArc,
+                character
+              );
+
+              initialMessages.push({
+                id: Date.now() + index + 2,
+                speaker: character.name,
+                character: character,
+                message: sanitizedMessage,
+                isUser: false,
+                isAction: msgData.isAction || false,
+                timestamp: new Date(
+                  new Date().getTime() + 1000 * (index + 1)
+                ).toISOString(),
+                writingInstructions: instructions,
+              });
+            } catch (error) {
+              console.error("Error generating writing instructions:", error);
+              // Add message without writing instructions
+              initialMessages.push({
+                id: Date.now() + index + 2,
+                speaker: character.name,
+                character: character,
+                message: sanitizedMessage,
+                isUser: false,
+                isAction: msgData.isAction || false,
+                timestamp: new Date(
+                  new Date().getTime() + 1000 * (index + 1)
+                ).toISOString(),
+              });
+            }
+          } else {
+            console.warn(
+              `Character ${msgData.speaker} not found in characters array!`
+            );
+            console.log(
+              "Available characters:",
+              characters.map((c) => c.name)
+            );
+          }
+        });
+      } else if (characters.length > 0) {
+        // If no scenario-specific messages but we have characters, add a greeting from the first character
+        console.log(
+          "No scenario data found, adding default greeting from first character"
+        );
+        const firstCharacter = characters[0];
+        const greeting =
+          firstCharacter.opening_line ||
+          `Hello! I'm ${firstCharacter.name}. How can I help you today?`;
+
+        try {
           // Generate appropriate writing instructions
           const instructions = generateWritingInstructions(
             initialStoryArc,
-            character
+            firstCharacter
           );
 
           initialMessages.push({
-            id: Date.now() + index + 2,
-            speaker: character.name,
-            character: character,
-            message: sanitizedMessage,
+            id: Date.now() + 1,
+            speaker: firstCharacter.name,
+            character: firstCharacter,
+            message: greeting,
             isUser: false,
-            isAction: msgData.isAction || false,
-            timestamp: new Date(
-              new Date().getTime() + 1000 * (index + 1)
-            ).toISOString(),
+            timestamp: new Date(new Date().getTime() + 1000).toISOString(),
             writingInstructions: instructions,
           });
-        } else {
-          console.warn(
-            `Character ${msgData.speaker} not found in characters array!`
+        } catch (error) {
+          console.error(
+            "Error generating writing instructions for default greeting:",
+            error
           );
-          console.log(
-            "Available characters:",
-            characters.map((c) => c.name)
-          );
+          // Add message without writing instructions
+          initialMessages.push({
+            id: Date.now() + 1,
+            speaker: firstCharacter.name,
+            character: firstCharacter,
+            message: greeting,
+            isUser: false,
+            timestamp: new Date(new Date().getTime() + 1000).toISOString(),
+          });
         }
-      });
-    } else if (characters.length > 0) {
-      // If no scenario-specific messages but we have characters, add a greeting from the first character
-      const firstCharacter = characters[0];
-      const greeting =
-        firstCharacter.opening_line ||
-        `Hello! I'm ${firstCharacter.name}. How can I help you today?`;
+      }
 
-      // Generate appropriate writing instructions
-      const instructions = generateWritingInstructions(
-        initialStoryArc,
-        firstCharacter
+      console.log(
+        "Setting initial chat history with",
+        initialMessages.length,
+        "messages"
       );
-
-      initialMessages.push({
-        id: Date.now() + 1,
-        speaker: firstCharacter.name,
-        character: firstCharacter,
-        message: greeting,
-        isUser: false,
-        timestamp: new Date(new Date().getTime() + 1000).toISOString(),
-        writingInstructions: instructions,
-      });
+      setChatHistory(initialMessages);
+      console.log("Navigating to chat page");
+      navigateTo("chat");
+    } catch (error) {
+      console.error("Error in startChat function:", error);
+      alert("An error occurred while starting the chat. Please try again.");
     }
-
-    setChatHistory(initialMessages);
-    navigateTo("chat");
   };
 
   // Load a saved chat
@@ -291,6 +384,13 @@ function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="velora-theme">
       <div className="min-h-screen bg-background">
+        {/* Debug Panel - always visible */}
+        <DebugPanel
+          chatRoom={chatRoom}
+          storyArc={storyArc}
+          activeCharacter={selectedCharacters[0]}
+          chatHistory={chatHistory}
+        />
         {currentPage === "onboarding" && (
           <Onboarding
             onComplete={(selectedChars) => {

@@ -288,6 +288,12 @@ export const getScenarioData = (scenarioTitle, scenarioTheme) => {
       return null;
     }
 
+    // Check if repository exists
+    if (!scenarioDataRepository || typeof scenarioDataRepository !== "object") {
+      console.error("Scenario data repository is missing or invalid");
+      return null;
+    }
+
     console.log(
       `getScenarioData called with title: "${
         scenarioTitle || "none"
@@ -295,23 +301,40 @@ export const getScenarioData = (scenarioTitle, scenarioTheme) => {
     );
 
     // Safely get keys from repository
-    const availableScenarios = scenarioDataRepository
-      ? Object.keys(scenarioDataRepository)
-      : [];
+    const availableScenarios = Object.keys(scenarioDataRepository);
     console.log("Available scenarios:", availableScenarios);
 
-    // First try to find by exact title if title is provided and repository exists
+    // Special case for "Avengers join battle" scenario - direct lookup with exact match
     if (
-      scenarioTitle &&
-      scenarioDataRepository &&
-      scenarioDataRepository[scenarioTitle]
+      scenarioTitle === "Avengers join battle" &&
+      scenarioDataRepository["Avengers join battle"]
     ) {
+      console.log(`Found Avengers join battle scenario by exact title`);
+      return scenarioDataRepository["Avengers join battle"];
+    }
+
+    // First try to find by exact title if title is provided
+    if (scenarioTitle && scenarioDataRepository[scenarioTitle]) {
       console.log(`Found scenario by exact title: "${scenarioTitle}"`);
       return scenarioDataRepository[scenarioTitle];
     }
 
+    // Try partial title match if exact match fails
+    if (scenarioTitle) {
+      const partialMatches = availableScenarios.filter((title) =>
+        title.toLowerCase().includes(scenarioTitle.toLowerCase())
+      );
+
+      if (partialMatches.length > 0) {
+        console.log(
+          `Found scenario by partial title match: "${partialMatches[0]}"`
+        );
+        return scenarioDataRepository[partialMatches[0]];
+      }
+    }
+
     // If not found by title and theme is provided, look for scenarios with matching theme
-    if (scenarioTheme && scenarioDataRepository) {
+    if (scenarioTheme) {
       const scenariosByTheme = Object.values(scenarioDataRepository).filter(
         (scenario) => scenario && scenario.theme === scenarioTheme
       );

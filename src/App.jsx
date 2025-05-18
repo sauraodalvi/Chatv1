@@ -63,14 +63,17 @@ function App() {
         return;
       }
 
-      // Validate that we have at least 2 characters
-      if (characters.length < 2) {
-        console.warn("Not enough characters selected:", characters.length);
+      // Validate that we have at least 1 character
+      if (characters.length < 1) {
+        console.warn("No characters selected:", characters.length);
         alert(
-          "At least 2 characters are required for meaningful conversations. Please select more characters."
+          "At least 1 character is required for a conversation. Please select a character."
         );
         return;
       }
+
+      // Log the number of characters for debugging
+      console.log(`Starting chat with ${characters.length} characters`);
 
       // Validate that all characters have required properties
       const invalidCharacters = characters.filter(

@@ -633,24 +633,34 @@ const QuickScenarioSelector = ({ onStartChat, onBack }) => {
       );
 
       // Start the chat with our predefined Avengers setup
+      // Correct parameter order: name, characters, prompt, background, theme
       onStartChat(
         "Avengers join battle",
         avengersCharacters,
         avengersBattlePrompt,
-        "",
-        avengersBackground
+        avengersBackground,
+        "superhero"
       );
+
+      console.log("Avengers chat started with background:", avengersBackground);
 
       return;
     }
 
     // Normal scenario handling
+    // Correct parameter order: name, characters, prompt, background, theme
+    console.log("Starting normal scenario:", scenario.title);
+    console.log(
+      "Characters:",
+      scenario.characters.map((c) => c.name).join(", ")
+    );
+
     onStartChat(
       scenario.title,
       scenario.characters,
       scenario.prompt,
-      "",
-      scenario.background
+      scenario.background,
+      scenario.type || "custom"
     );
   };
 

@@ -271,6 +271,10 @@ const ChatRoom = ({
     // Add defensive check for chatRoom
     if (!chatRoom) {
       console.error("ChatRoom component received null/undefined chatRoom");
+      alert(
+        "Error: Chat room data is missing. Please try again or contact support."
+      );
+      onLeaveChat(); // Return to landing page if chatRoom is missing
       return; // Exit early if chatRoom is not available
     }
 
@@ -280,8 +284,16 @@ const ChatRoom = ({
         "ChatRoom received invalid characters array:",
         chatRoom.characters
       );
+      alert("Error: Character data is invalid. Returning to main menu.");
+      onLeaveChat(); // Return to landing page if characters are invalid
       return;
     }
+
+    // Log the number of characters for debugging
+    console.log(
+      `Chat room initialized with ${chatRoom.characters.length} characters:`,
+      chatRoom.characters.map((c) => c.name).join(", ")
+    );
 
     // Load user characters
     loadUserCharacters();
@@ -5057,82 +5069,204 @@ const renderChatRoom = () => {
         />
       )}
 
-      {/* Chat header */}
-      <header className="border-b py-2 px-3 md:py-3 md:px-4">
+      {/* Chat header - Improved for mobile */}
+      <header className="border-b py-2 px-3 md:py-3 md:px-4 sticky top-0 bg-background/95 backdrop-blur-sm z-10 shadow-sm">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <button
               onClick={onLeaveChat}
-              className="p-1.5 rounded-full hover:bg-secondary"
+              className="p-2 rounded-full hover:bg-secondary touch-action-manipulation"
+              aria-label="Leave Chat"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="sr-only">Leave Chat</span>
             </button>
-            <h1 className="text-lg md:text-xl font-bold">
+            <h1 className="text-base md:text-xl font-bold truncate max-w-[150px] sm:max-w-[250px] md:max-w-none">
               {chatRoom?.name || "Chat Room"}
             </h1>
           </div>
+
+          {/* Mobile-optimized action buttons */}
           <div className="flex gap-1 md:gap-2">
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
-              title={
-                theme === "dark"
-                  ? "Switch to Light Mode"
-                  : "Switch to Dark Mode"
-              }
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4 md:h-5 md:w-5" />
-              ) : (
-                <Moon className="h-4 w-4 md:h-5 md:w-5" />
-              )}
-            </button>
-            <button
-              onClick={onHowToUse}
-              className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
-              title="How to Use Velora"
-            >
-              <HelpCircle className="h-4 w-4 md:h-5 md:w-5" />
-            </button>
+            {/* Primary actions always visible */}
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
-              title="Chat Settings"
+              className="inline-flex items-center justify-center rounded-full p-2 text-sm font-medium hover:bg-secondary active:bg-secondary/70 touch-action-manipulation"
+              aria-label="Chat Settings"
             >
-              <Settings className="h-4 w-4 md:h-5 md:w-5" />
+              <Settings className="h-5 w-5" />
             </button>
-            <button
-              onClick={toggleAddCharacter}
-              className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
-              title="Add Character"
-            >
-              <UserPlus className="h-4 w-4 md:h-5 md:w-5" />
-            </button>
-            <button
-              onClick={onSaveChat}
-              className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
-              title="Save Chat"
-            >
-              <Download className="h-4 w-4 md:h-5 md:w-5" />
-            </button>
-            {chatRoom.characters.length > 1 && (
-              <button
-                onClick={() => setShowRelationshipGraph(true)}
-                className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
-                title="Character Relationships"
-              >
-                <Users className="h-4 w-4 md:h-5 md:w-5" />
-              </button>
-            )}
 
-            <button
-              onClick={() => setShowMemoryPanel(true)}
-              className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
-              title="Memory System"
-            >
-              <Brain className="h-4 w-4 md:h-5 md:w-5" />
-            </button>
+            {/* Secondary actions in dropdown on mobile, visible on desktop */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  const dropdown = document.getElementById(
+                    "header-actions-dropdown"
+                  );
+                  if (dropdown) {
+                    dropdown.classList.toggle("hidden");
+                  }
+                }}
+                className="inline-flex items-center justify-center rounded-full p-2 text-sm font-medium hover:bg-secondary active:bg-secondary/70 md:hidden touch-action-manipulation"
+                aria-label="More Actions"
+              >
+                <MoreVertical className="h-5 w-5" />
+              </button>
+
+              {/* Dropdown menu for mobile */}
+              <div
+                id="header-actions-dropdown"
+                className="absolute right-0 top-full mt-1 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-2 hidden z-20 w-[180px]"
+              >
+                <div className="grid grid-cols-2 gap-1">
+                  <button
+                    onClick={() => {
+                      setTheme(theme === "dark" ? "light" : "dark");
+                      document
+                        .getElementById("header-actions-dropdown")
+                        .classList.add("hidden");
+                    }}
+                    className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-secondary/50 text-xs"
+                  >
+                    {theme === "dark" ? (
+                      <>
+                        <Sun className="h-5 w-5 mb-1" />
+                        <span>Light Mode</span>
+                      </>
+                    ) : (
+                      <>
+                        <Moon className="h-5 w-5 mb-1" />
+                        <span>Dark Mode</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      onHowToUse();
+                      document
+                        .getElementById("header-actions-dropdown")
+                        .classList.add("hidden");
+                    }}
+                    className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-secondary/50 text-xs"
+                  >
+                    <HelpCircle className="h-5 w-5 mb-1" />
+                    <span>Help</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      toggleAddCharacter();
+                      document
+                        .getElementById("header-actions-dropdown")
+                        .classList.add("hidden");
+                    }}
+                    className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-secondary/50 text-xs"
+                  >
+                    <UserPlus className="h-5 w-5 mb-1" />
+                    <span>Add Character</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      onSaveChat();
+                      document
+                        .getElementById("header-actions-dropdown")
+                        .classList.add("hidden");
+                    }}
+                    className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-secondary/50 text-xs"
+                  >
+                    <Download className="h-5 w-5 mb-1" />
+                    <span>Save Chat</span>
+                  </button>
+
+                  {chatRoom.characters.length > 1 && (
+                    <button
+                      onClick={() => {
+                        setShowRelationshipGraph(true);
+                        document
+                          .getElementById("header-actions-dropdown")
+                          .classList.add("hidden");
+                      }}
+                      className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-secondary/50 text-xs"
+                    >
+                      <Users className="h-5 w-5 mb-1" />
+                      <span>Relationships</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setShowMemoryPanel(true);
+                      document
+                        .getElementById("header-actions-dropdown")
+                        .classList.add("hidden");
+                    }}
+                    className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-secondary/50 text-xs"
+                  >
+                    <Brain className="h-5 w-5 mb-1" />
+                    <span>Memories</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Desktop buttons - hidden on mobile */}
+              <div className="hidden md:flex gap-1">
+                <button
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
+                  title={
+                    theme === "dark"
+                      ? "Switch to Light Mode"
+                      : "Switch to Dark Mode"
+                  }
+                >
+                  {theme === "dark" ? (
+                    <Sun className="h-5 w-5" />
+                  ) : (
+                    <Moon className="h-5 w-5" />
+                  )}
+                </button>
+                <button
+                  onClick={onHowToUse}
+                  className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
+                  title="How to Use Velora"
+                >
+                  <HelpCircle className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={toggleAddCharacter}
+                  className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
+                  title="Add Character"
+                >
+                  <UserPlus className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={onSaveChat}
+                  className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
+                  title="Save Chat"
+                >
+                  <Download className="h-5 w-5" />
+                </button>
+                {chatRoom.characters.length > 1 && (
+                  <button
+                    onClick={() => setShowRelationshipGraph(true)}
+                    className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
+                    title="Character Relationships"
+                  >
+                    <Users className="h-5 w-5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowMemoryPanel(true)}
+                  className="inline-flex items-center justify-center rounded-md p-1.5 text-sm font-medium hover:bg-secondary"
+                  title="Memory System"
+                >
+                  <Brain className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -5388,10 +5522,10 @@ const renderChatRoom = () => {
         </div>
       )}
 
-      {/* Chat messages */}
+      {/* Chat messages - Improved for mobile */}
       <div
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto py-3 px-1 sm:py-4 sm:px-2 md:py-5 md:px-0"
+        className="flex-1 overflow-y-auto py-2 px-1 sm:py-4 sm:px-2 md:py-5 md:px-0 pb-20"
         style={
           chatBackground
             ? chatBackground.startsWith("linear-gradient")
@@ -5409,12 +5543,12 @@ const renderChatRoom = () => {
         <div className="container mx-auto max-w-full sm:max-w-[95%] md:max-w-[90%] lg:max-w-[85%] xl:max-w-[80%] 2xl:max-w-[75%]">
           {/* Always show the opening prompt at the top */}
           {chatRoom?.openingPrompt && chatRoom.openingPrompt.trim() && (
-            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-3 md:p-4 mb-5 text-center border border-primary/30 shadow-md relative">
+            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-3 md:p-4 mb-4 text-center border border-primary/30 shadow-md relative">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 to-purple-500/50"></div>
               <h3 className="text-xs md:text-sm uppercase tracking-wider text-muted-foreground mb-1">
                 Scenario
               </h3>
-              <p className="text-base md:text-lg italic">
+              <p className="text-sm md:text-base italic">
                 {chatRoom.openingPrompt}
               </p>
             </div>
@@ -5423,18 +5557,20 @@ const renderChatRoom = () => {
           {chatHistory.map((msg) => (
             <div
               key={msg.id}
-              className={`mb-6 flex ${
+              className={`mb-4 flex ${
                 msg.isUser ? "justify-end" : "justify-start"
               }`}
             >
-              {/* Avatar for non-user messages */}
+              {/* Avatar for non-user messages - optimized for mobile */}
               {!msg.isUser && (
-                <div className="mr-3 flex-shrink-0 self-end">
-                  {getCharacterAvatar(msg.character)}
+                <div className="mr-2 md:mr-3 flex-shrink-0 self-end">
+                  <div className="w-8 h-8 md:w-10 md:h-10">
+                    {getCharacterAvatar(msg.character)}
+                  </div>
                 </div>
               )}
 
-              <div className="flex flex-col max-w-[90%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%]">
+              <div className="flex flex-col max-w-[85%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[70%]">
                 {/* Message bubble */}
                 {editingMessage === msg.id ? (
                   <div className="rounded-lg p-2.5 sm:p-3 md:p-4 bg-background border border-primary/30 shadow-md">
@@ -5480,7 +5616,7 @@ const renderChatRoom = () => {
                   </div>
                 ) : (
                   <div
-                    className={`rounded-lg p-2.5 sm:p-3 md:p-4 ${
+                    className={`rounded-lg p-2 sm:p-2.5 md:p-3 text-sm md:text-base ${
                       msg.isUser && !msg.isAction && msg.speaker !== "Yourself"
                         ? "bg-primary text-primary-foreground rounded-br-none shadow-md"
                         : msg.isUser &&
@@ -5494,22 +5630,22 @@ const renderChatRoom = () => {
                         : ""
                     } ${
                       msg.system
-                        ? "bg-background/80 backdrop-blur-sm text-center italic border border-muted shadow-sm w-full mx-auto"
+                        ? "bg-background/80 backdrop-blur-sm text-center italic border border-muted shadow-sm w-full mx-auto text-xs sm:text-sm"
                         : ""
                     }
                     ${
                       msg.isNarration
-                        ? "bg-secondary/50 backdrop-blur-sm text-center italic border border-secondary/50 font-medium shadow-sm w-full mx-auto"
+                        ? "bg-secondary/50 backdrop-blur-sm text-center italic border border-secondary/50 font-medium shadow-sm w-full mx-auto text-xs sm:text-sm"
                         : ""
                     } ${
                       msg.edited ? "border-l-2 border-amber-500 relative" : ""
                     }`}
                   >
-                    {/* Show speaker name and mood indicator in a more streamlined format */}
+                    {/* Show speaker name and mood indicator - optimized for mobile */}
                     {!msg.system && !msg.isAction && (
                       <div className="mb-1 flex justify-between items-center">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold">
+                        <div className="flex items-center gap-1">
+                          <span className="font-bold text-xs sm:text-sm truncate max-w-[100px] sm:max-w-[150px] md:max-w-none">
                             {msg.isUser && msg.speaker !== "Yourself"
                               ? "YOU"
                               : msg.speaker}
@@ -5534,13 +5670,13 @@ const renderChatRoom = () => {
                             />
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
                           {msg.edited && (
-                            <span className="text-xs text-amber-500 italic">
+                            <span className="text-[10px] sm:text-xs text-amber-500 italic">
                               (edited)
                             </span>
                           )}
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground">
                             {formatTime(msg.timestamp)}
                           </span>
                         </div>
@@ -5586,10 +5722,10 @@ const renderChatRoom = () => {
                   </div>
                 )}
 
-                {/* Message actions */}
+                {/* Message actions - optimized for mobile */}
                 {!msg.system && !editingMessage && (
                   <div
-                    className={`flex gap-2 mt-1 text-xs ${
+                    className={`flex gap-1 sm:gap-2 mt-1 text-[10px] sm:text-xs ${
                       msg.isUser ? "justify-end" : "justify-start"
                     }`}
                   >
@@ -5601,45 +5737,54 @@ const renderChatRoom = () => {
                         ) && (
                         <button
                           onClick={() => handleRegenerateMessage(msg.id)}
-                          className="text-muted-foreground hover:text-foreground flex items-center gap-1"
+                          className="text-muted-foreground hover:text-foreground flex items-center gap-0.5 sm:gap-1 p-1 rounded-md active:bg-secondary/30 touch-action-manipulation"
+                          aria-label="Regenerate message"
                         >
-                          <RefreshCw className="h-3 w-3" />
-                          <span>Regenerate</span>
+                          <RefreshCw className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          <span className="hidden sm:inline">Regenerate</span>
+                          <span className="sm:hidden">Retry</span>
                         </button>
                       )}
                     <button
                       onClick={() => handleEditMessage(msg.id)}
-                      className="text-muted-foreground hover:text-foreground flex items-center gap-1"
+                      className="text-muted-foreground hover:text-foreground flex items-center gap-0.5 sm:gap-1 p-1 rounded-md active:bg-secondary/30 touch-action-manipulation"
+                      aria-label="Edit message"
                     >
-                      <Pencil className="h-3 w-3" />
+                      <Pencil className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                       <span>Edit</span>
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Avatar for user messages */}
+              {/* Avatar for user messages - optimized for mobile */}
               {msg.isUser && (
-                <div className="ml-3 flex-shrink-0 self-end">
-                  {getCharacterAvatar(msg.character)}
+                <div className="ml-2 md:ml-3 flex-shrink-0 self-end">
+                  <div className="w-8 h-8 md:w-10 md:h-10">
+                    {getCharacterAvatar(msg.character)}
+                  </div>
                 </div>
               )}
             </div>
           ))}
 
-          {/* Typing indicator */}
+          {/* Typing indicator - optimized for mobile */}
           {isTyping && (
-            <div className="flex justify-start mb-6">
+            <div className="flex justify-start mb-4">
               {typingCharacter && (
-                <div className="mr-3 flex-shrink-0 self-end">
-                  {getCharacterAvatar(typingCharacter)}
+                <div className="mr-2 md:mr-3 flex-shrink-0 self-end">
+                  <div className="w-8 h-8 md:w-10 md:h-10">
+                    {getCharacterAvatar(typingCharacter)}
+                  </div>
                 </div>
               )}
-              <div className="flex flex-col max-w-[90%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%]">
+              <div className="flex flex-col max-w-[85%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[70%]">
                 {typingCharacter && (
                   <div className="mb-1 flex justify-between items-center">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold">{typingCharacter.name}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold text-xs sm:text-sm truncate max-w-[100px] sm:max-w-[150px] md:max-w-none">
+                        {typingCharacter.name}
+                      </span>
                       <MoodIndicator
                         mood={typingCharacter.mood || "neutral"}
                         intensity={5}
@@ -5648,17 +5793,19 @@ const renderChatRoom = () => {
                     </div>
                   </div>
                 )}
-                <div className="bg-secondary/90 backdrop-blur-sm rounded-lg rounded-bl-none p-2.5 sm:p-3 md:p-4 shadow-md">
-                  <div className="flex gap-2">
-                    <span className="animate-bounce text-lg">•</span>
+                <div className="bg-secondary/90 backdrop-blur-sm rounded-lg rounded-bl-none p-2 sm:p-2.5 md:p-3 shadow-md">
+                  <div className="flex gap-1 sm:gap-2">
+                    <span className="animate-bounce text-base sm:text-lg">
+                      •
+                    </span>
                     <span
-                      className="animate-bounce text-lg"
+                      className="animate-bounce text-base sm:text-lg"
                       style={{ animationDelay: "0.2s" }}
                     >
                       •
                     </span>
                     <span
-                      className="animate-bounce text-lg"
+                      className="animate-bounce text-base sm:text-lg"
                       style={{ animationDelay: "0.4s" }}
                     >
                       •
@@ -6932,9 +7079,9 @@ const renderChatRoom = () => {
             </div>
           )}
 
-          {/* Instagram-style input area */}
-          <div className="flex items-center gap-2 mt-2">
-            {/* Enhanced Character selector button with label */}
+          {/* Instagram-style input area - optimized for mobile */}
+          <div className="flex items-center gap-1 sm:gap-2 mt-2 pb-2 fixed bottom-0 left-0 right-0 px-2 sm:px-4 bg-background/95 backdrop-blur-sm border-t z-10">
+            {/* Enhanced Character selector button with label - optimized for mobile */}
             <div className="relative">
               <button
                 onClick={() => {
@@ -6943,15 +7090,16 @@ const renderChatRoom = () => {
                   );
                   dropdown.classList.toggle("hidden");
                 }}
-                className="flex items-center gap-2 px-2 py-1 rounded-md bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                className="flex items-center gap-1 sm:gap-2 px-2 py-1 rounded-md bg-secondary/30 hover:bg-secondary/50 transition-colors touch-action-manipulation"
                 title={
                   activeCharacter
                     ? `Change character (currently ${activeCharacter.name})`
                     : "Select a character to play"
                 }
+                aria-label="Select character"
               >
                 <div
-                  className={`w-8 h-8 rounded-full overflow-hidden border-2 ${
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 ${
                     activeCharacter ? "border-primary" : "border-muted"
                   } flex-shrink-0 transition-all`}
                 >
@@ -6967,11 +7115,11 @@ const renderChatRoom = () => {
                     )
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-secondary/30">
-                      <User className="h-5 w-5 text-muted-foreground" />
+                      <User className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col items-start">
+                <div className="flex-col items-start hidden sm:flex">
                   <span className="text-xs text-muted-foreground">
                     Playing as:
                   </span>
@@ -6981,7 +7129,10 @@ const renderChatRoom = () => {
                       : "Select Character"}
                   </span>
                 </div>
-                <ChevronRight className="h-4 w-4 ml-1 text-muted-foreground" />
+                <span className="text-xs font-medium sm:hidden truncate max-w-[60px]">
+                  {activeCharacter ? activeCharacter.name : "Select"}
+                </span>
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-0.5 text-muted-foreground" />
               </button>
 
               <div
@@ -7210,7 +7361,7 @@ const renderChatRoom = () => {
               </div>
             </div>
 
-            {/* Main message input - Instagram style */}
+            {/* Main message input - Instagram style - optimized for mobile */}
             <div className="flex-1 flex items-center bg-secondary/20 rounded-full border border-transparent focus-within:border-primary/30 focus-within:bg-background transition-all">
               <textarea
                 value={message}
@@ -7219,34 +7370,36 @@ const renderChatRoom = () => {
                 placeholder={
                   activeCharacter
                     ? `Message as ${activeCharacter.name}...`
-                    : "Select a character to start messaging..."
+                    : "Select a character..."
                 }
-                className="flex-1 min-h-[40px] max-h-[120px] px-4 py-2 bg-transparent border-none resize-none focus:outline-none text-sm"
+                className="flex-1 min-h-[36px] sm:min-h-[40px] max-h-[80px] sm:max-h-[120px] px-3 sm:px-4 py-1.5 sm:py-2 bg-transparent border-none resize-none focus:outline-none text-sm"
                 style={{ overflow: "auto" }}
               />
 
-              {/* Quick action buttons inside input area */}
-              <div className="flex items-center pr-2 gap-1">
+              {/* Quick action buttons inside input area - optimized for mobile */}
+              <div className="flex items-center pr-1 sm:pr-2 gap-0.5 sm:gap-1">
                 <button
                   onClick={toggleActionMenu}
-                  className="p-1.5 rounded-full hover:bg-secondary/50 text-muted-foreground transition-colors"
+                  className="p-1 sm:p-1.5 rounded-full hover:bg-secondary/50 active:bg-secondary/70 text-muted-foreground transition-colors touch-action-manipulation"
                   title="Character actions"
+                  aria-label="Character actions"
                 >
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
 
                 <button
                   onClick={toggleNarrationInput}
-                  className="p-1.5 rounded-full hover:bg-secondary/50 text-muted-foreground transition-colors"
+                  className="p-1 sm:p-1.5 rounded-full hover:bg-secondary/50 active:bg-secondary/70 text-muted-foreground transition-colors touch-action-manipulation"
                   title="Add narration"
+                  aria-label="Add narration"
                 >
-                  <BookOpen className="h-4 w-4" />
+                  <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
 
                 {/* Enhanced Character Turn Button - Let an AI character speak without typing a message */}
                 <div className="relative">
                   <button
-                    className="p-1.5 rounded-full hover:bg-primary/20 text-primary transition-colors"
+                    className="p-1 sm:p-1.5 rounded-full hover:bg-primary/20 active:bg-primary/30 text-primary transition-colors touch-action-manipulation"
                     data-character-turn-toggle="true"
                     onClick={() => {
                       // Show character selection dropdown
@@ -7263,14 +7416,15 @@ const renderChatRoom = () => {
                       }
                     }}
                     title="Let AI character speak (auto-response)"
+                    aria-label="Let AI character speak"
                   >
-                    <Zap className="h-4 w-4" />
+                    <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
 
-                  {/* Character selection dropdown */}
+                  {/* Character selection dropdown - optimized for mobile */}
                   <div
                     id="character-turn-dropdown"
-                    className="absolute bottom-full right-0 mb-2 bg-background/95 backdrop-blur-sm border border-input rounded-md shadow-lg p-3 hidden z-10 min-w-[250px]"
+                    className="absolute bottom-full right-0 mb-2 bg-background/95 backdrop-blur-sm border border-input rounded-md shadow-lg p-2 sm:p-3 hidden z-10 min-w-[200px] sm:min-w-[250px] max-h-[300px] overflow-y-auto"
                   >
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="text-sm font-medium">AI Auto-Response</h4>
@@ -7382,27 +7536,29 @@ const renderChatRoom = () => {
                 {message.trim() && activeCharacter ? (
                   <button
                     onClick={handleSendMessage}
-                    className="p-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    className="p-1 sm:p-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors touch-action-manipulation"
+                    aria-label="Send message"
                   >
-                    <Send className="h-4 w-4" />
+                    <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                 ) : (
                   <button
                     onClick={generateNextOptions}
-                    className="p-1.5 rounded-full hover:bg-secondary/50 text-muted-foreground transition-colors"
+                    className="p-1 sm:p-1.5 rounded-full hover:bg-secondary/50 active:bg-secondary/70 text-muted-foreground transition-colors touch-action-manipulation"
                     title="What happens next?"
+                    aria-label="What happens next?"
                   >
-                    <Lightbulb className="h-4 w-4" />
+                    <Lightbulb className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Quick action buttons */}
+          {/* Quick action buttons - optimized for mobile */}
           {/* Narrative-driven quick actions with categories */}
           <ScrollableQuickActions
-            className="mt-2"
+            className="mt-2 mb-16 sm:mb-20" /* Added bottom margin to account for fixed input area */
             enableCategories={true}
             activeCharacter={activeCharacter}
             narrativePhase={narrativePhase}
@@ -7604,9 +7760,9 @@ const renderChatRoom = () => {
             </Chip>
           </ScrollableQuickActions>
 
-          {/* Tips and scene transition */}
-          <div className="flex justify-between items-center mt-1">
-            <div className="text-xs text-muted-foreground">
+          {/* Tips and scene transition - optimized for mobile */}
+          <div className="flex justify-between items-center mt-1 mb-16 sm:mb-20">
+            <div className="text-[10px] sm:text-xs text-muted-foreground">
               Tip: Use <span className="font-medium">*asterisks*</span> for
               actions
             </div>
@@ -7615,9 +7771,10 @@ const renderChatRoom = () => {
               <Chip
                 variant="default"
                 size="sm"
-                icon={<Lightbulb className="h-3.5 w-3.5" />}
+                icon={<Lightbulb className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
                 onClick={() => generateNextOptions()}
                 title="What happens next?"
+                className="text-[10px] sm:text-xs py-0.5 px-2 sm:py-1 sm:px-2.5"
               >
                 What Next?
               </Chip>

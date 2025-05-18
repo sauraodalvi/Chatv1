@@ -47,6 +47,14 @@ function App() {
       theme,
     });
 
+    // Validate that we have at least 2 characters
+    if (!characters || characters.length < 2) {
+      alert(
+        "At least 2 characters are required for meaningful conversations. Please select more characters."
+      );
+      return;
+    }
+
     // If no opening prompt is provided, generate a default one based on the room name
     const finalPrompt =
       openingPrompt && openingPrompt.trim()

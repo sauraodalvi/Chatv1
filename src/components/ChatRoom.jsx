@@ -35,6 +35,8 @@ import {
   ChevronLeft,
   Sun,
   Moon,
+  UserCircle,
+  Plus,
 } from "lucide-react";
 import Chip from "./ui/Chip";
 import CharacterAvatar from "./CharacterAvatar";
@@ -64,6 +66,8 @@ import {
   shouldAnnounceMoodChange,
   getMoodChangeDescription,
 } from "../utils/moodUtils";
+import { getUserCharacters } from "../utils/userCharacterUtils";
+import UserCharacterManager from "./UserCharacterManager";
 import { generateStoryBranches } from "../utils/storyBranchingUtils";
 import { generateBattleOptions } from "../utils/enhancedStoryBranchingUtils";
 import {
@@ -196,6 +200,11 @@ const ChatRoom = ({
   // Track previous story branch choices
   const [previousChoices, setPreviousChoices] = useState([]);
 
+  // User character management
+  const [userCharacters, setUserCharacters] = useState([]);
+  const [showUserCharacterManager, setShowUserCharacterManager] =
+    useState(false);
+
   // Store full option objects for battle scenarios
   const [fullNextOptions, setFullNextOptions] = useState([]);
 
@@ -222,8 +231,17 @@ const ChatRoom = ({
     },
   };
 
+  // Load user characters
+  const loadUserCharacters = () => {
+    const characters = getUserCharacters();
+    setUserCharacters(characters);
+  };
+
   useEffect(() => {
     console.log("ChatRoom useEffect - chatRoom changed:", chatRoom?.name);
+
+    // Load user characters
+    loadUserCharacters();
 
     // Set the first character as active by default
     if (chatRoom && chatRoom.characters.length > 0 && !activeCharacter) {
@@ -1321,6 +1339,16 @@ const ChatRoom = ({
                 "I don't know what to say about that",
                 "I'm not sure I understand",
                 "Let's talk about something else",
+                "This requires careful analysis",
+                "I need to consider the facts",
+                "There are several factors to consider",
+                "I'm processing the information",
+                "Let me think through this logically",
+                "I'm examining the different angles",
+                "I need a moment to process",
+                "I'm not certain how to interpret",
+                "This is a complex matter",
+                "I need to analyze this further",
               ];
 
               const isOffTopic = offTopicIndicators.some((indicator) =>
@@ -1329,10 +1357,38 @@ const ChatRoom = ({
 
               // If the response seems off-topic, use a character-specific fallback
               if (isOffTopic) {
+                console.log(
+                  `Detected off-topic response from ${respondingCharacter.name}, using character-specific fallback`
+                );
                 const context = isBattleScenario ? "battle" : "conversation";
+
+                // Check for romantic/inappropriate context in the last message
+                const lastMessageLower = lastMessage.message.toLowerCase();
+                const hasRomanticContext =
+                  lastMessageLower.includes("love") ||
+                  lastMessageLower.includes("kiss") ||
+                  lastMessageLower.includes("hug") ||
+                  lastMessageLower.includes("beautiful") ||
+                  lastMessageLower.includes("marry") ||
+                  lastMessageLower.includes("date") ||
+                  lastMessageLower.includes("come here") ||
+                  lastMessageLower.includes("touch") ||
+                  lastMessageLower.includes("hold") ||
+                  lastMessageLower.includes("feel") ||
+                  lastMessageLower.includes("heart") ||
+                  lastMessageLower.includes("together") ||
+                  lastMessageLower.includes("want you");
+
+                // Use romantic context if detected
+                const effectiveContext =
+                  hasRomanticContext &&
+                  characterWithCurrentMood.type === "fantasy"
+                    ? "romantic"
+                    : context;
+
                 response = generateCharacterFallback(
                   characterWithCurrentMood,
-                  context,
+                  effectiveContext,
                   lastMessage.message
                 );
               }
@@ -2187,6 +2243,16 @@ const ChatRoom = ({
             "I don't know what to say about that",
             "I'm not sure I understand",
             "Let's talk about something else",
+            "This requires careful analysis",
+            "I need to consider the facts",
+            "There are several factors to consider",
+            "I'm processing the information",
+            "Let me think through this logically",
+            "I'm examining the different angles",
+            "I need a moment to process",
+            "I'm not certain how to interpret",
+            "This is a complex matter",
+            "I need to analyze this further",
           ];
 
           const isOffTopic = offTopicIndicators.some((indicator) =>
@@ -2195,10 +2261,37 @@ const ChatRoom = ({
 
           // If the response seems off-topic, use a character-specific fallback
           if (isOffTopic) {
+            console.log(
+              `Detected off-topic response from ${character.name}, using character-specific fallback`
+            );
             const context = isBattleScenario ? "battle" : "conversation";
+
+            // Check for romantic/inappropriate context in the prompt
+            const promptLower = prompt.toLowerCase();
+            const hasRomanticContext =
+              promptLower.includes("love") ||
+              promptLower.includes("kiss") ||
+              promptLower.includes("hug") ||
+              promptLower.includes("beautiful") ||
+              promptLower.includes("marry") ||
+              promptLower.includes("date") ||
+              promptLower.includes("come here") ||
+              promptLower.includes("touch") ||
+              promptLower.includes("hold") ||
+              promptLower.includes("feel") ||
+              promptLower.includes("heart") ||
+              promptLower.includes("together") ||
+              promptLower.includes("want you");
+
+            // Use romantic context if detected for fantasy characters
+            const effectiveContext =
+              hasRomanticContext && characterWithCurrentMood.type === "fantasy"
+                ? "romantic"
+                : context;
+
             response = generateCharacterFallback(
               characterWithCurrentMood,
-              context,
+              effectiveContext,
               prompt
             );
           }
@@ -3585,8 +3678,39 @@ const ChatRoom = ({
         );
       } catch (error) {
         console.error("Error generating character response:", error);
-        response =
-          "I'm not sure how to respond to that. Let's try a different topic.";
+
+        // Use character-specific fallback instead of generic message
+        const isBattleScenario = detectBattleScenario(chatRoom, chatHistory);
+        const context = isBattleScenario ? "battle" : "conversation";
+
+        // Check for romantic/inappropriate context in the user message
+        const userMessageLower = userMessage.message.toLowerCase();
+        const hasRomanticContext =
+          userMessageLower.includes("love") ||
+          userMessageLower.includes("kiss") ||
+          userMessageLower.includes("hug") ||
+          userMessageLower.includes("beautiful") ||
+          userMessageLower.includes("marry") ||
+          userMessageLower.includes("date") ||
+          userMessageLower.includes("come here") ||
+          userMessageLower.includes("touch") ||
+          userMessageLower.includes("hold") ||
+          userMessageLower.includes("feel") ||
+          userMessageLower.includes("heart") ||
+          userMessageLower.includes("together") ||
+          userMessageLower.includes("want you");
+
+        // Use romantic context if detected for fantasy characters
+        const effectiveContext =
+          hasRomanticContext && character.type === "fantasy"
+            ? "romantic"
+            : context;
+
+        response = generateCharacterFallback(
+          character,
+          effectiveContext,
+          userMessage.message
+        );
       }
 
       // Add the response to chat history
@@ -4118,6 +4242,16 @@ const ChatRoom = ({
                 "I don't know what to say about that",
                 "I'm not sure I understand",
                 "Let's talk about something else",
+                "This requires careful analysis",
+                "I need to consider the facts",
+                "There are several factors to consider",
+                "I'm processing the information",
+                "Let me think through this logically",
+                "I'm examining the different angles",
+                "I need a moment to process",
+                "I'm not certain how to interpret",
+                "This is a complex matter",
+                "I need to analyze this further",
               ];
 
               const isOffTopic = offTopicIndicators.some((indicator) =>
@@ -4126,10 +4260,38 @@ const ChatRoom = ({
 
               // If the response seems off-topic, use a character-specific fallback
               if (isOffTopic) {
+                console.log(
+                  `Detected off-topic response from ${characterWithCurrentMood.name}, using character-specific fallback`
+                );
                 const context = isBattleContext ? "battle" : "conversation";
+
+                // Check for romantic/inappropriate context in the user message
+                const userMessageLower = userMessage.message.toLowerCase();
+                const hasRomanticContext =
+                  userMessageLower.includes("love") ||
+                  userMessageLower.includes("kiss") ||
+                  userMessageLower.includes("hug") ||
+                  userMessageLower.includes("beautiful") ||
+                  userMessageLower.includes("marry") ||
+                  userMessageLower.includes("date") ||
+                  userMessageLower.includes("come here") ||
+                  userMessageLower.includes("touch") ||
+                  userMessageLower.includes("hold") ||
+                  userMessageLower.includes("feel") ||
+                  userMessageLower.includes("heart") ||
+                  userMessageLower.includes("together") ||
+                  userMessageLower.includes("want you");
+
+                // Use romantic context if detected for fantasy characters
+                const effectiveContext =
+                  hasRomanticContext &&
+                  characterWithCurrentMood.type === "fantasy"
+                    ? "romantic"
+                    : context;
+
                 response = generateCharacterFallback(
                   characterWithCurrentMood,
-                  context,
+                  effectiveContext,
                   userMessage.message
                 );
               }
@@ -4678,13 +4840,6 @@ const ChatRoom = ({
               )}
 
               <div className="flex flex-col max-w-[90%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%]">
-                {/* Speaker name for non-user messages */}
-                {!msg.isUser && !msg.system && !msg.isNarration && (
-                  <div className="text-xs font-medium text-muted-foreground mb-1 ml-1">
-                    {msg.speaker}
-                  </div>
-                )}
-
                 {/* Message bubble */}
                 {editingMessage === msg.id ? (
                   <div className="rounded-lg p-2.5 sm:p-3 md:p-4 bg-background border border-primary/30 shadow-md">
@@ -4755,11 +4910,11 @@ const ChatRoom = ({
                       msg.edited ? "border-l-2 border-amber-500 relative" : ""
                     }`}
                   >
-                    {/* Show speaker name for all messages except system messages and actions */}
+                    {/* Show speaker name and mood indicator in a more streamlined format */}
                     {!msg.system && !msg.isAction && (
-                      <div className="font-bold mb-1 flex justify-between items-center">
+                      <div className="mb-1 flex justify-between items-center">
                         <div className="flex items-center gap-1.5">
-                          <span>
+                          <span className="font-bold">
                             {msg.isUser && msg.speaker !== "Yourself"
                               ? "YOU"
                               : msg.speaker}
@@ -4887,8 +5042,15 @@ const ChatRoom = ({
               )}
               <div className="flex flex-col max-w-[90%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%]">
                 {typingCharacter && (
-                  <div className="text-xs font-medium text-muted-foreground mb-1 ml-1">
-                    {typingCharacter.name}
+                  <div className="mb-1 flex justify-between items-center">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold">{typingCharacter.name}</span>
+                      <MoodIndicator
+                        mood={typingCharacter.mood || "neutral"}
+                        intensity={5}
+                        size="sm"
+                      />
+                    </div>
                   </div>
                 )}
                 <div className="bg-secondary/90 backdrop-blur-sm rounded-lg rounded-bl-none p-2.5 sm:p-3 md:p-4 shadow-md">
@@ -4960,6 +5122,22 @@ const ChatRoom = ({
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {/* User Character Manager Modal */}
+      {showUserCharacterManager && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg shadow-lg w-full max-w-3xl max-h-[80vh] flex flex-col overflow-hidden">
+            <UserCharacterManager
+              onSelectCharacter={(character) => {
+                setActiveCharacter(character);
+                setShowUserCharacterManager(false);
+                loadUserCharacters();
+              }}
+              onClose={() => setShowUserCharacterManager(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Add Character Modal */}
       {showAddCharacter && (
@@ -6263,8 +6441,112 @@ const ChatRoom = ({
                     </button>
                   </div>
 
+                  {/* User Characters Section */}
+                  {userCharacters.length > 0 && (
+                    <>
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-xs font-medium text-muted-foreground px-1 py-1">
+                          Your Characters
+                        </h4>
+                        <button
+                          onClick={() => {
+                            document
+                              .getElementById("character-select-dropdown")
+                              .classList.add("hidden");
+                            setShowUserCharacterManager(true);
+                          }}
+                          className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span>Manage</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-2 mb-3">
+                        {userCharacters.map((char) => (
+                          <button
+                            key={char.id}
+                            onClick={() => {
+                              setActiveCharacter(char);
+                              document
+                                .getElementById("character-select-dropdown")
+                                .classList.add("hidden");
+                            }}
+                            className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-accent rounded-md ${
+                              activeCharacter?.id === char.id
+                                ? "bg-primary/10 border border-primary/30"
+                                : "border border-border"
+                            }`}
+                          >
+                            {char.avatar ? (
+                              <div className="w-10 h-10 rounded-full overflow-hidden border border-background flex-shrink-0 shadow-sm">
+                                <img
+                                  src={char.avatar}
+                                  alt={char.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div
+                                className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                  char.type === "fantasy"
+                                    ? "bg-purple-500"
+                                    : char.type === "scifi"
+                                    ? "bg-blue-500"
+                                    : char.type === "historical"
+                                    ? "bg-amber-500"
+                                    : char.type === "superhero"
+                                    ? "bg-red-500"
+                                    : char.type === "adventure"
+                                    ? "bg-orange-500"
+                                    : "bg-green-500"
+                                } text-white flex-shrink-0`}
+                              >
+                                <UserCircle className="h-6 w-6" />
+                              </div>
+                            )}
+                            <div className="flex flex-col items-start">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-medium">{char.name}</span>
+                                <MoodIndicator
+                                  mood={char.mood || "neutral"}
+                                  intensity={5}
+                                  size="sm"
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground line-clamp-1">
+                                {char.description
+                                  ? char.description.substring(0, 60) +
+                                    (char.description.length > 60 ? "..." : "")
+                                  : char.type}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Create New Character Button */}
+                  <div className="mb-3">
+                    <button
+                      onClick={() => {
+                        document
+                          .getElementById("character-select-dropdown")
+                          .classList.add("hidden");
+                        setShowUserCharacterManager(true);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 p-2 rounded-md border border-dashed border-primary/50 hover:border-primary hover:bg-primary/5 transition-all"
+                    >
+                      <Plus className="h-4 w-4 text-primary" />
+                      <span className="text-sm text-primary">
+                        Create Your Character
+                      </span>
+                    </button>
+                  </div>
+
                   <h4 className="text-xs font-medium text-muted-foreground px-1 py-1 mb-2">
-                    Available Characters
+                    Story Characters
                   </h4>
 
                   <div className="space-y-2">

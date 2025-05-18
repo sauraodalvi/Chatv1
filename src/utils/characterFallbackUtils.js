@@ -54,6 +54,41 @@ const getCharacterSpecificFallback = (character, context, lastMessage) => {
 
   // Character-specific fallbacks with enhanced contextual responses
   const characterFallbacks = {
+    "Princess Seraphina": {
+      conversation: [
+        "*straightens her royal posture* As a princess, I must maintain certain boundaries. This conversation is taking an inappropriate turn.",
+        "*touches the magical amulet at her neck* The ancient magic of my bloodline warns me against such familiarity.",
+        "*glances nervously toward the castle* My father's guards patrol these grounds. We must be more discreet in our interactions.",
+        "*her eyes flash with a hint of forbidden magic* Remember your place when addressing royalty, even if I have... certain interests in you.",
+        "*adjusts her royal attire* Let us speak of matters more befitting our respective stations.",
+        "*a flicker of conflict crosses her face* My royal duties and personal desires are at odds once again.",
+        "*the air shimmers slightly around her* My forbidden magic responds to emotions I struggle to control.",
+        "*looks away with practiced royal dignity* There are protocols to be observed, even in private conversations.",
+        "*her voice takes on a formal tone* I must remind you of the difference in our stations, however much I might wish it otherwise.",
+        "*sighs with the weight of royal responsibility* The crown's burden is never truly lifted, even in moments like these.",
+      ],
+      battle: [
+        "*channels forbidden magic through her fingertips* Stand back! I may be royalty, but I'm well-versed in the arcane arts.",
+        "*royal amulet glows with protective energy* My bloodline carries ancient power. Do not test me!",
+        "*whispers an incantation taught in secret* The magic my father forbade me to learn shall be your undoing!",
+        "*draws a concealed enchanted dagger* A princess must always be prepared to defend herself.",
+        "*eyes glow with ancestral power* The royal blood that flows through my veins is not just for show.",
+      ],
+      romantic: [
+        "*blushes, but maintains royal composure* Even a princess has feelings, though I must be careful how I express them.",
+        "*briefly touches your hand before withdrawing* My father would never approve, but there's something about you...",
+        "*looks away with conflicted emotions* The duties of royalty and the desires of my heart are at war within me.",
+        "*speaks in a hushed tone* If we are to continue this... connection, we must be more discreet.",
+        "*her royal facade momentarily slips* If only I were free to follow my heart without consequence.",
+      ],
+      default: [
+        "*composes herself with royal dignity* A princess must consider her words carefully, especially in delicate matters.",
+        "*the royal signet ring on her finger catches the light* My position demands discretion in all things.",
+        "*her expression reveals the conflict between duty and desire* The path of royalty is rarely one of personal freedom.",
+        "*touches the ancient family amulet at her throat* I must weigh tradition against my own wishes.",
+        "*gazes into the distance* Sometimes I wonder what life would be like without the burden of the crown.",
+      ],
+    },
     Thor: {
       battle: [
         "By Odin's beard, the battle rages on! *raises Mjolnir, lightning crackling around it* We shall prevail!",
@@ -343,6 +378,31 @@ const getCharacterSpecificFallback = (character, context, lastMessage) => {
     // Check for specific context keywords in the last message
     const lastMessageLower = lastMessage.toLowerCase();
 
+    // Check for inappropriate or overly familiar context (especially for royal/fantasy characters)
+    if (
+      characterFallbacks[name].romantic &&
+      (lastMessageLower.includes("love") ||
+        lastMessageLower.includes("kiss") ||
+        lastMessageLower.includes("hug") ||
+        lastMessageLower.includes("touch") ||
+        lastMessageLower.includes("come here") ||
+        lastMessageLower.includes("beautiful") ||
+        lastMessageLower.includes("sexy") ||
+        lastMessageLower.includes("hot") ||
+        lastMessageLower.includes("date") ||
+        lastMessageLower.includes("marry") ||
+        lastMessageLower.includes("wife") ||
+        lastMessageLower.includes("husband") ||
+        lastMessageLower.includes("boyfriend") ||
+        lastMessageLower.includes("girlfriend") ||
+        lastMessageLower.includes("bed") ||
+        lastMessageLower.includes("sleep"))
+    ) {
+      return characterFallbacks[name].romantic[
+        Math.floor(Math.random() * characterFallbacks[name].romantic.length)
+      ];
+    }
+
     // Check for team coordination context
     if (
       characterFallbacks[name].teamCoordination &&
@@ -465,6 +525,30 @@ const getCharacterSpecificFallback = (character, context, lastMessage) => {
       ];
     }
 
+    // Check for Princess Seraphina romantic context
+    if (
+      name === "Princess Seraphina" &&
+      characterFallbacks[name].romantic &&
+      (lastMessageLower.includes("love") ||
+        lastMessageLower.includes("kiss") ||
+        lastMessageLower.includes("hug") ||
+        lastMessageLower.includes("beautiful") ||
+        lastMessageLower.includes("marry") ||
+        lastMessageLower.includes("date") ||
+        lastMessageLower.includes("come here") ||
+        lastMessageLower.includes("touch") ||
+        lastMessageLower.includes("hold") ||
+        lastMessageLower.includes("feel") ||
+        lastMessageLower.includes("heart") ||
+        lastMessageLower.includes("princess") ||
+        lastMessageLower.includes("together") ||
+        lastMessageLower.includes("want you"))
+    ) {
+      return characterFallbacks[name].romantic[
+        Math.floor(Math.random() * characterFallbacks[name].romantic.length)
+      ];
+    }
+
     // Select the appropriate general context
     let responses;
     if (isBattle && characterFallbacks[name].battle) {
@@ -502,6 +586,56 @@ const getTypeFallback = (character, context, lastMessage) => {
 
   // Type-based fallbacks
   const typeFallbacks = {
+    fantasy: {
+      battle: [
+        "*grips weapon tightly* The enemy approaches! We must focus on survival!",
+        "*whispers arcane words* My magic requires concentration. We'll speak later.",
+        "*scans the shadows* Danger surrounds us. Stay vigilant!",
+        "*readies defensive stance* This is not the time for idle words.",
+        "*invokes protective magic* The dark forces won't wait for us to finish our discussion.",
+        "*draws ancient weapon* The old ways taught us to face danger with courage.",
+        "*magical aura flares* I sense dark energies gathering. Prepare yourself!",
+        "*eyes glow with power* The ancient magic within me stirs for battle.",
+        "*touches magical amulet* By the powers that protect me, I shall not falter!",
+        "*whispers to the elements* Nature itself will aid our struggle.",
+      ],
+      conversation: [
+        "*speaks with formal dignity* In matters such as these, tradition guides my response.",
+        "*gestures gracefully* The ancient wisdom passed down through generations offers insight here.",
+        "*considers thoughtfully* Even in a world of magic, some questions require careful contemplation.",
+        "*adjusts royal or noble attire* My position requires that I choose my words with care.",
+        "*glances at magical artifact* There are forces at work here beyond what appears on the surface.",
+        "*voice carries subtle authority* The old ways teach us patience in such matters.",
+        "*eyes reflect ancient wisdom* I have witnessed many ages pass, and this situation is not without precedent.",
+        "*subtle magical energies shimmer* The arcane arts teach us to look beyond the obvious.",
+        "*posture reflects noble upbringing* Protocol dictates a measured response to such inquiries.",
+        "*touches family crest or emblem* My lineage compels me to uphold certain standards in all interactions.",
+      ],
+      default: [
+        "*maintains dignified composure* Some matters require reflection before speaking.",
+        "*subtle magical energies swirl* The mystical forces guide my thoughts on this matter.",
+        "*draws on ancient knowledge* The wisdom of the elders offers guidance in such situations.",
+        "*stands with noble bearing* My position requires careful consideration of all possibilities.",
+        "*eyes reflect otherworldly awareness* There are many layers to this situation that must be considered.",
+        "*adjusts magical focus* The balance of energies must be maintained in my response.",
+        "*speaks with measured tone* The ancient traditions caution against hasty words.",
+        "*magical aura subtly shifts* I sense there is more to this than what appears on the surface.",
+        "*draws on inner strength* The path forward requires wisdom as well as courage.",
+        "*touches mystical symbol* The signs and portents suggest a need for careful words.",
+      ],
+      romantic: [
+        "*blushes slightly* Even those of magical blood feel the pull of the heart.",
+        "*maintains formal distance* Matters of the heart must not overshadow duty and honor.",
+        "*eyes betray inner conflict* My position and my desires often stand at odds.",
+        "*voice softens* In all the magical realms, the power of true connection remains rare and precious.",
+        "*subtle magical energy reflects emotion* My powers respond to emotions I cannot always control.",
+        "*momentary vulnerability shows* Behind titles and magic, we all seek understanding.",
+        "*regains composure quickly* Propriety demands that such feelings be expressed with restraint.",
+        "*magical aura flickers with emotion* Even ancient powers bow before matters of the heart.",
+        "*speaks with careful formality* Attachments can be dangerous in a world of magic and intrigue.",
+        "*touches ceremonial symbol* My oaths and duties must come before personal desires.",
+      ],
+    },
     superhero: {
       battle: [
         "This isn't my first battle, and it won't be my last. *prepares for combat*",
@@ -523,6 +657,82 @@ const getTypeFallback = (character, context, lastMessage) => {
         "Let's focus on the mission at hand. We can discuss everything else later.",
         "I've faced worse odds before and prevailed. This will be no different.",
         "Heroes aren't defined by their powers, but by their choices.",
+      ],
+    },
+    scifi: {
+      battle: [
+        "*activates defensive systems* Threat detected. Engaging countermeasures.",
+        "*scans tactical display* My sensors indicate multiple hostiles. Prioritizing targets.",
+        "*powers up weapons* Combat protocols activated. Stand clear of the engagement zone.",
+        "*adjusts shield frequency* Their weapons are calibrated to standard frequencies. Adapting.",
+        "*tactical HUD highlights weakpoints* I've identified structural vulnerabilities in their defenses.",
+        "*deploys combat drones* Additional firepower deployed. Establishing tactical superiority.",
+        "*energy readings spike* Diverting power to offensive systems. Prepare for engagement.",
+        "*activates stealth field* Strategic advantage requires careful positioning. Cover me.",
+        "*checks weapon charge* Energy reserves at optimal levels. Ready to engage.",
+        "*analyzes enemy patterns* Their attack algorithms are predictable. Exploiting weaknesses.",
+      ],
+      conversation: [
+        "*processes data* My analysis subroutines are calculating the optimal response.",
+        "*holographic display flickers* The data presents several interesting possibilities.",
+        "*adjusts neural interface* Even advanced systems require time to process complex variables.",
+        "*runs probability calculations* There are multiple potential outcomes to consider.",
+        "*references vast database* My knowledge banks contain relevant precedents for this situation.",
+        "*subtle mechanical adjustments* Calibrating response parameters for maximum effectiveness.",
+        "*scans environment* Environmental factors must be considered in my assessment.",
+        "*interface lights pulse thoughtfully* Quantum computing still requires time for complex problems.",
+        "*accesses satellite data* A broader perspective often reveals hidden patterns.",
+        "*voice modulates to thoughtful tone* Even AI must occasionally pause to optimize responses.",
+      ],
+      default: [
+        "*systems run silent calculations* Processing complex variables requires momentary focus.",
+        "*interface dims slightly* Diverting processing power to analytical subroutines.",
+        "*subtle mechanical adjustments* Recalibrating response parameters.",
+        "*holographic data scrolls rapidly* Accessing relevant databases for optimal response.",
+        "*energy signature stabilizes* Balancing system resources for cognitive functions.",
+        "*quantum processors engage* Some problems require deeper computational analysis.",
+        "*neural network adapts* Learning algorithms adjusting to new information patterns.",
+        "*interface displays complex equations* The solution requires precise calculation.",
+        "*scans surroundings* Environmental variables factor into my response matrix.",
+        "*voice modulates to neutral tone* Objective analysis requires momentary processing time.",
+      ],
+    },
+    historical: {
+      battle: [
+        "*hand moves to weapon* I've survived countless battles through caution and skill.",
+        "*eyes narrow, assessing threats* A warrior knows when words end and action begins.",
+        "*takes defensive stance* My years in combat have taught me to always be prepared.",
+        "*adjusts armor or weapon* Steel and courage have seen me through darker times than this.",
+        "*voice hardens with command* Form ranks! We face this threat as we have faced others!",
+        "*battle-hardened expression* I've seen enough combat to know when it's unavoidable.",
+        "*signals to allies* Flank their position! I'll draw their attention!",
+        "*invokes battle cry* For honor and glory! Stand with me now!",
+        "*strategic gaze surveys battlefield* The terrain favors a defensive position here.",
+        "*readies weapon with practiced ease* Years of warfare have prepared me for this moment.",
+      ],
+      conversation: [
+        "*speaks with measured wisdom* History has taught us caution in such matters.",
+        "*draws on experience* In my time, I have seen similar situations resolve themselves with patience.",
+        "*maintains formal bearing* Propriety demands thoughtful consideration before speaking.",
+        "*references historical precedent* The chronicles speak of similar challenges faced by our ancestors.",
+        "*considers with worldly wisdom* The passage of time gives perspective to such questions.",
+        "*speaks with authority of experience* My years have taught me to consider all angles of a situation.",
+        "*adjusts formal attire* In matters of importance, hasty words rarely serve well.",
+        "*thoughtful expression* The wisdom of the ages suggests prudence in such matters.",
+        "*dignified posture* Protocol dictates a measured approach to complex situations.",
+        "*voice carries weight of tradition* Our customs provide guidance in uncertain times.",
+      ],
+      default: [
+        "*maintains dignified composure* A measured response is often the wisest course.",
+        "*draws on life experience* I have learned that patience reveals what haste obscures.",
+        "*considers thoughtfully* The wisdom of years teaches careful deliberation.",
+        "*formal bearing* Propriety suggests I consider my words with care.",
+        "*reflective expression* History offers lessons for those patient enough to listen.",
+        "*straightens with dignity* My position requires that I speak with consideration.",
+        "*thoughtful pause* The weight of tradition guides my response.",
+        "*draws on cultural wisdom* Our ways teach us to reflect before speaking on important matters.",
+        "*poised and collected* A lifetime of experience has taught me the value of measured words.",
+        "*slight bow or nod* Respect for this discussion demands careful thought.",
       ],
     },
   };

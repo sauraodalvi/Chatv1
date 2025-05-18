@@ -1565,11 +1565,93 @@ export const generateCharacterResponse = (
     }
   }
 
-  // Check if we have a scenario to reference
+  // Enhanced scenario context incorporation
   let scenarioReference = "";
   if (chatRoom && chatRoom.openingPrompt) {
-    // 30% chance to reference the scenario context
-    if (Math.random() < 0.3) {
+    // Extract scenario elements for more contextual responses
+    const scenarioElements = extractScenarioElements(chatRoom.openingPrompt);
+
+    // 50% chance to reference the scenario context (increased from 30%)
+    if (Math.random() < 0.5) {
+      // Check for flirtatious or romantic content in the message
+      const isFlirtatious =
+        message.toLowerCase().includes("flirt") ||
+        message.toLowerCase().includes("beautiful") ||
+        message.toLowerCase().includes("attractive") ||
+        message.toLowerCase().includes("handsome") ||
+        message.toLowerCase().includes("pretty") ||
+        message.toLowerCase().includes("gorgeous") ||
+        message.toLowerCase().includes("like you") ||
+        message.toLowerCase().includes("dress") ||
+        message.toLowerCase().includes("eyes") ||
+        message.toLowerCase().includes("smile");
+
+      if (isFlirtatious) {
+        // Generate a flirtatious response that incorporates scenario elements
+        const flirtResponses = [
+          `*${
+            scenarioElements.mood
+              ? `with a ${scenarioElements.mood} expression`
+              : "with a subtle smile"
+          }, glancing around at the ${
+            scenarioElements.setting || "surroundings"
+          }* I notice you're being quite charming. The ${
+            scenarioElements.weather || "atmosphere"
+          } seems to have put you in a certain mood.`,
+
+          `*adjusting ${
+            character.type === "fantasy"
+              ? "robes"
+              : character.type === "scifi"
+              ? "uniform"
+              : "clothing"
+          } slightly* Your words are quite forward, especially given our ${
+            scenarioElements.relationships.length > 0
+              ? scenarioElements.relationships[0]
+              : "current situation"
+          }. Though I must admit, it's refreshing in this ${
+            scenarioElements.mood || "tense"
+          } environment.`,
+
+          `*leaning in slightly, voice lowering* In ${
+            scenarioElements.setting || "a place like this"
+          }, with ${
+            scenarioElements.weather || "everything going on"
+          }, you choose to focus on such... personal observations? Interesting choice.`,
+
+          `*a hint of color rises to my cheeks* Even with ${
+            scenarioElements.conflict || "all that's happening around us"
+          }, you find time for such comments? You're either very brave or very distracted.`,
+
+          `*maintaining eye contact a moment longer than necessary* The ${
+            scenarioElements.time || "current"
+          } light does everyone favors, but I appreciate the sentiment nonetheless. We should focus on ${
+            scenarioElements.conflict || "the matter at hand"
+          }, though perhaps... later we can continue this conversation.`,
+        ];
+
+        return flirtResponses[
+          Math.floor(Math.random() * flirtResponses.length)
+        ];
+      }
+
+      // Generate a response that incorporates sensory details from the scenario
+      if (
+        scenarioElements.sensoryDetails &&
+        scenarioElements.sensoryDetails.length > 0 &&
+        Math.random() < 0.4
+      ) {
+        const sensoryCues = [
+          `*pausing to notice the ${scenarioElements.sensoryDetails[0]} around us* ${template}`,
+          `*briefly distracted by the ${scenarioElements.sensoryDetails[0]} in our surroundings* As I was saying... ${template}`,
+          `Even with the ${scenarioElements.sensoryDetails[0]} making it hard to focus, I believe ${template}`,
+          `*gesturing to the ${scenarioElements.sensoryDetails[0]}* This reminds me of something relevant to our discussion. ${template}`,
+        ];
+
+        return sensoryCues[Math.floor(Math.random() * sensoryCues.length)];
+      }
+
+      // Standard scenario response with higher chance of success
       const scenarioResponse = generateScenarioResponse(
         character,
         chatRoom.openingPrompt,
@@ -1580,9 +1662,9 @@ export const generateCharacterResponse = (
       }
     }
 
-    // 20% chance to reference character relationships if there are multiple characters
+    // 30% chance to reference character relationships if there are multiple characters (increased from 20%)
     if (
-      Math.random() < 0.2 &&
+      Math.random() < 0.3 &&
       chatRoom.characters &&
       chatRoom.characters.length > 1
     ) {
@@ -1602,12 +1684,22 @@ export const generateCharacterResponse = (
         );
 
         if (trackedRelationship) {
-          // Use our tracked relationship data
+          // Use our tracked relationship data with more dynamic interactions
           const relationshipDesc =
             getRelationshipDescription(trackedRelationship);
-          return `*looking at ${targetChar.name}* As ${relationshipDesc}, I think we both have perspectives on this. ${template}`;
+
+          const relationshipActions = [
+            `*looking at ${targetChar.name}* As ${relationshipDesc}, I think we both have perspectives on this. ${template}`,
+            `*exchanging a meaningful glance with ${targetChar.name}* ${targetChar.name} and I have history as ${relationshipDesc}. That gives me a unique view on this: ${template}`,
+            `*subtly positioning closer to ${targetChar.name}* Having been ${relationshipDesc} with ${targetChar.name}, I can say with confidence that ${template}`,
+            `*briefly touching ${targetChar.name}'s shoulder* ${targetChar.name} knows what I mean. As ${relationshipDesc}, we've discussed this before. ${template}`,
+          ];
+
+          return relationshipActions[
+            Math.floor(Math.random() * relationshipActions.length)
+          ];
         } else {
-          // Fall back to the generic relationship response
+          // Fall back to the generic relationship response with enhanced context
           const relationshipResponse = generateRelationshipResponse(
             character,
             targetChar,
@@ -1620,14 +1712,14 @@ export const generateCharacterResponse = (
       }
     }
 
-    // 15% chance to add a combat response if the character is a combat type or keywords suggest combat
+    // 25% chance to add a combat response if the character is a combat type or keywords suggest combat (increased from 15%)
     if (
       (type === "combat" ||
         hasWeapon ||
         message.toLowerCase().includes("fight") ||
         message.toLowerCase().includes("battle") ||
         message.toLowerCase().includes("combat")) &&
-      Math.random() < 0.15
+      Math.random() < 0.25
     ) {
       const combatResponse = generateCombatResponse(
         character,
@@ -1637,6 +1729,24 @@ export const generateCharacterResponse = (
       if (combatResponse) {
         return combatResponse;
       }
+    }
+
+    // 20% chance to reference emotional undercurrents from the scenario
+    if (
+      scenarioElements.emotionalUndercurrents &&
+      scenarioElements.emotionalUndercurrents.length > 0 &&
+      Math.random() < 0.2
+    ) {
+      const emotionalResponses = [
+        `*sensing the ${scenarioElements.emotionalUndercurrents[0]} in the air* There's something unspoken affecting us all here. ${template}`,
+        `The ${scenarioElements.emotionalUndercurrents[0]} between us is palpable. It makes me think that ${template}`,
+        `*voice softening* With all this ${scenarioElements.emotionalUndercurrents[0]} around us, it's hard to focus solely on facts. ${template}`,
+        `*glancing around at others* Does anyone else feel the ${scenarioElements.emotionalUndercurrents[0]} here? It's relevant because ${template}`,
+      ];
+
+      return emotionalResponses[
+        Math.floor(Math.random() * emotionalResponses.length)
+      ];
     }
   }
 

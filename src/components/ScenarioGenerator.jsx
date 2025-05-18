@@ -1,28 +1,42 @@
-import { useState } from 'react';
-import { generateScenarioFromKeywords, generateCharactersForScenario, generateCharacterFromKeywords } from '../utils/aiGenerationUtils';
-import { Wand2, Loader2, Plus, X, RefreshCw, UserPlus, Edit, Check } from 'lucide-react';
-import { characterLibrary } from '../data/characters';
+import { useState } from "react";
+import {
+  generateScenarioFromKeywords,
+  generateCharactersForScenario,
+  generateCharacterFromKeywords,
+} from "../utils/aiGenerationUtils";
+import {
+  Wand2,
+  Loader2,
+  Plus,
+  X,
+  RefreshCw,
+  UserPlus,
+  Edit,
+  Check,
+} from "lucide-react";
+import { characterLibrary } from "../data/characters";
 
 const ScenarioGenerator = ({ onCreateScenario }) => {
-  const [keywords, setKeywords] = useState('');
+  const [keywords, setKeywords] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedScenario, setGeneratedScenario] = useState(null);
   const [generatedCharacters, setGeneratedCharacters] = useState([]);
   const [selectedCharacters, setSelectedCharacters] = useState([]);
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
-  const [isCustomCharacterModalOpen, setIsCustomCharacterModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [customCharacterKeywords, setCustomCharacterKeywords] = useState('');
+  const [isCustomCharacterModalOpen, setIsCustomCharacterModalOpen] =
+    useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [customCharacterKeywords, setCustomCharacterKeywords] = useState("");
   const [isGeneratingCustom, setIsGeneratingCustom] = useState(false);
 
   // Custom character form state
   const [customCharacter, setCustomCharacter] = useState({
-    name: '',
-    description: '',
-    mood: '',
-    opening_line: '',
-    type: 'modern',
-    avatar: ''
+    name: "",
+    description: "",
+    mood: "",
+    opening_line: "",
+    type: "modern",
+    avatar: "",
   });
 
   const handleGenerate = () => {
@@ -44,12 +58,20 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
   };
 
   const handleCreateChat = () => {
-    if (generatedScenario && selectedCharacters.length > 0) {
+    // Validate that we have at least 2 characters
+    if (selectedCharacters.length < 2) {
+      alert(
+        "At least 2 characters are required for meaningful conversations. Please add more characters."
+      );
+      return;
+    }
+
+    if (generatedScenario && selectedCharacters.length >= 2) {
       onCreateScenario(
         generatedScenario.title,
         selectedCharacters,
         generatedScenario.prompt,
-        '',
+        "",
         generatedScenario.background
       );
     }
@@ -57,8 +79,10 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
 
   // Toggle character selection
   const toggleCharacterSelection = (character) => {
-    if (selectedCharacters.some(c => c.name === character.name)) {
-      setSelectedCharacters(selectedCharacters.filter(c => c.name !== character.name));
+    if (selectedCharacters.some((c) => c.name === character.name)) {
+      setSelectedCharacters(
+        selectedCharacters.filter((c) => c.name !== character.name)
+      );
     } else {
       setSelectedCharacters([...selectedCharacters, character]);
     }
@@ -72,9 +96,11 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
 
     // Simulate API delay
     setTimeout(() => {
-      const newCharacter = generateCharacterFromKeywords(customCharacterKeywords);
+      const newCharacter = generateCharacterFromKeywords(
+        customCharacterKeywords
+      );
       setSelectedCharacters([...selectedCharacters, newCharacter]);
-      setCustomCharacterKeywords('');
+      setCustomCharacterKeywords("");
       setIsGeneratingCustom(false);
       setIsCharacterModalOpen(false);
     }, 1000);
@@ -85,7 +111,11 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
     e.preventDefault();
 
     // Validate form
-    if (!customCharacter.name || !customCharacter.description || !customCharacter.mood) {
+    if (
+      !customCharacter.name ||
+      !customCharacter.description ||
+      !customCharacter.mood
+    ) {
       return;
     }
 
@@ -99,33 +129,34 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
         humor: 5,
         confidence: 5,
         creativity: 5,
-        sociability: 5
+        sociability: 5,
       },
       talkativeness: 5,
       thinkingSpeed: 1.0,
-      background: customCharacter.description
+      background: customCharacter.description,
     };
 
     setSelectedCharacters([...selectedCharacters, newCharacter]);
 
     // Reset form
     setCustomCharacter({
-      name: '',
-      description: '',
-      mood: '',
-      opening_line: '',
-      type: 'modern',
-      avatar: ''
+      name: "",
+      description: "",
+      mood: "",
+      opening_line: "",
+      type: "modern",
+      avatar: "",
     });
 
     setIsCustomCharacterModalOpen(false);
   };
 
   // Filter existing characters for selection
-  const filteredCharacters = characterLibrary.filter(char =>
-    char.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    char.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    char.type.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCharacters = characterLibrary.filter(
+    (char) =>
+      char.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      char.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      char.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleRegenerateCharacter = (index) => {
@@ -140,10 +171,16 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
       setGeneratedCharacters(updatedCharacters);
 
       // Update the selected characters if this character was selected
-      if (selectedCharacters.some(c => c.name === generatedCharacters[index].name)) {
-        setSelectedCharacters(selectedCharacters.map(c =>
-          c.name === generatedCharacters[index].name ? newCharacter : c
-        ));
+      if (
+        selectedCharacters.some(
+          (c) => c.name === generatedCharacters[index].name
+        )
+      ) {
+        setSelectedCharacters(
+          selectedCharacters.map((c) =>
+            c.name === generatedCharacters[index].name ? newCharacter : c
+          )
+        );
       }
 
       setIsGenerating(false);
@@ -155,7 +192,8 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
       <div className="mb-8">
         <h2 className="text-2xl font-bold mb-4">Generate a Scenario</h2>
         <p className="text-muted-foreground mb-4">
-          Enter a few keywords/ideas and the AI will use them to generate characters and a scenario.
+          Enter a few keywords/ideas and the AI will use them to generate
+          characters and a scenario.
         </p>
 
         <div className="flex gap-2">
@@ -189,7 +227,9 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
       {generatedScenario && (
         <div className="mb-8">
           <h3 className="text-xl font-bold mb-2">{generatedScenario.title}</h3>
-          <p className="text-muted-foreground mb-4">{generatedScenario.description}</p>
+          <p className="text-muted-foreground mb-4">
+            {generatedScenario.description}
+          </p>
 
           <div className="bg-secondary/30 rounded-lg p-4 mb-4 italic">
             {generatedScenario.prompt}
@@ -197,7 +237,7 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
 
           {generatedScenario.background && (
             <div className="mb-4">
-              {generatedScenario.background.startsWith('linear-gradient') ? (
+              {generatedScenario.background.startsWith("linear-gradient") ? (
                 <div
                   className="w-full h-40 rounded-lg"
                   style={{ background: generatedScenario.background }}
@@ -223,9 +263,9 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
               <div
                 key={index}
                 className={`border rounded-lg p-4 bg-background/50 cursor-pointer transition-all ${
-                  selectedCharacters.some(c => c.name === character.name)
-                    ? 'border-primary/70 bg-primary/5'
-                    : 'hover:border-primary/30'
+                  selectedCharacters.some((c) => c.name === character.name)
+                    ? "border-primary/70 bg-primary/5"
+                    : "hover:border-primary/30"
                 }`}
                 onClick={() => toggleCharacterSelection(character)}
               >
@@ -239,9 +279,13 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
                   )}
                   <div className="flex-1">
                     <h4 className="font-bold">{character.name}</h4>
-                    <div className="text-xs text-muted-foreground">{character.type} • {character.mood}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {character.type} • {character.mood}
+                    </div>
                   </div>
-                  {selectedCharacters.some(c => c.name === character.name) && (
+                  {selectedCharacters.some(
+                    (c) => c.name === character.name
+                  ) && (
                     <div className="bg-primary text-primary-foreground p-1 rounded-full">
                       <Check className="h-4 w-4" />
                     </div>
@@ -249,7 +293,9 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
                 </div>
 
                 <p className="text-sm mb-2">{character.description}</p>
-                <p className="text-sm italic mb-3">"{character.opening_line}"</p>
+                <p className="text-sm italic mb-3">
+                  "{character.opening_line}"
+                </p>
 
                 <div className="flex justify-between">
                   <button
@@ -269,37 +315,62 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
 
           {/* Character Management Section */}
           <div className="mb-8 border-t border-b py-4">
-            <h3 className="text-lg font-medium mb-3">Selected Characters ({selectedCharacters.length})</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-lg font-medium">
+                Selected Characters ({selectedCharacters.length})
+              </h3>
+              {selectedCharacters.length === 1 && (
+                <span className="text-xs text-red-500 px-2 py-0.5 bg-red-500/10 rounded-full">
+                  Need 1 more
+                </span>
+              )}
+              {selectedCharacters.length >= 2 && (
+                <span className="text-xs text-green-600 px-2 py-0.5 bg-green-500/10 rounded-full">
+                  Ready
+                </span>
+              )}
+            </div>
 
-            {selectedCharacters.length > 0 ? (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {selectedCharacters.map(char => (
-                  <div
-                    key={char.name}
-                    className="bg-secondary rounded-full px-3 py-1 text-sm flex items-center gap-1"
-                  >
-                    {char.avatar && (
-                      <img
-                        src={char.avatar}
-                        alt={char.name}
-                        className="w-5 h-5 rounded-full object-cover mr-1"
-                      />
-                    )}
-                    {char.name}
-                    <button
-                      onClick={() => toggleCharacterSelection(char)}
-                      className="ml-1 hover:text-destructive"
+            <div
+              className={`p-3 mb-4 border rounded-md ${
+                selectedCharacters.length === 0
+                  ? "border-muted-foreground/20 bg-secondary/10"
+                  : selectedCharacters.length === 1
+                  ? "border-red-500/30 bg-red-500/5"
+                  : "border-primary/20 bg-primary/5"
+              }`}
+            >
+              {selectedCharacters.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {selectedCharacters.map((char) => (
+                    <div
+                      key={char.name}
+                      className="bg-secondary rounded-full px-3 py-1 text-sm flex items-center gap-1"
                     >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground mb-4 text-sm">
-                No characters selected. Select at least one character to create a chat.
-              </p>
-            )}
+                      {char.avatar && (
+                        <img
+                          src={char.avatar}
+                          alt={char.name}
+                          className="w-5 h-5 rounded-full object-cover mr-1"
+                        />
+                      )}
+                      {char.name}
+                      <button
+                        onClick={() => toggleCharacterSelection(char)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  No characters selected. Select at least 2 characters to create
+                  a meaningful conversation.
+                </p>
+              )}
+            </div>
 
             <div className="flex gap-2">
               <button
@@ -322,7 +393,7 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
 
           <button
             onClick={handleCreateChat}
-            disabled={selectedCharacters.length === 0}
+            disabled={selectedCharacters.length < 2}
             className="w-full inline-flex items-center justify-center rounded-md bg-primary px-4 py-3 font-medium text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50"
           >
             Create Chat with Selected Characters
@@ -345,7 +416,9 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
             </div>
 
             <div className="mb-6">
-              <h3 className="text-lg font-medium mb-2">Generate from Keywords</h3>
+              <h3 className="text-lg font-medium mb-2">
+                Generate from Keywords
+              </h3>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -356,7 +429,9 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
                 />
                 <button
                   onClick={handleGenerateCustomCharacter}
-                  disabled={!customCharacterKeywords.trim() || isGeneratingCustom}
+                  disabled={
+                    !customCharacterKeywords.trim() || isGeneratingCustom
+                  }
                   className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50"
                 >
                   {isGeneratingCustom ? (
@@ -370,7 +445,9 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
             </div>
 
             <div className="mb-4">
-              <h3 className="text-lg font-medium mb-2">Select Existing Character</h3>
+              <h3 className="text-lg font-medium mb-2">
+                Select Existing Character
+              </h3>
               <input
                 type="text"
                 placeholder="Search characters..."
@@ -382,14 +459,14 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
 
             <div className="max-h-[40vh] overflow-y-auto">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {filteredCharacters.map(character => (
+                {filteredCharacters.map((character) => (
                   <div
                     key={character.name}
                     onClick={() => toggleCharacterSelection(character)}
                     className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                      selectedCharacters.some(c => c.name === character.name)
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border hover:border-primary/50'
+                      selectedCharacters.some((c) => c.name === character.name)
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -406,9 +483,13 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
                       )}
                       <div>
                         <h4 className="font-bold">{character.name}</h4>
-                        <div className="text-xs text-muted-foreground">{character.type} • {character.mood}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {character.type} • {character.mood}
+                        </div>
                       </div>
-                      {selectedCharacters.some(c => c.name === character.name) && (
+                      {selectedCharacters.some(
+                        (c) => c.name === character.name
+                      ) && (
                         <div className="ml-auto bg-primary text-primary-foreground p-1 rounded-full">
                           <Check className="h-3 w-3" />
                         </div>
@@ -454,27 +535,43 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
             <form onSubmit={handleAddCustomCharacter}>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="character-name" className="block text-sm font-medium mb-1">
+                  <label
+                    htmlFor="character-name"
+                    className="block text-sm font-medium mb-1"
+                  >
                     Name
                   </label>
                   <input
                     id="character-name"
                     type="text"
                     value={customCharacter.name}
-                    onChange={(e) => setCustomCharacter({...customCharacter, name: e.target.value})}
+                    onChange={(e) =>
+                      setCustomCharacter({
+                        ...customCharacter,
+                        name: e.target.value,
+                      })
+                    }
                     required
                     className="w-full px-3 py-2 rounded-md border border-input bg-background"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="character-description" className="block text-sm font-medium mb-1">
+                  <label
+                    htmlFor="character-description"
+                    className="block text-sm font-medium mb-1"
+                  >
                     Description
                   </label>
                   <textarea
                     id="character-description"
                     value={customCharacter.description}
-                    onChange={(e) => setCustomCharacter({...customCharacter, description: e.target.value})}
+                    onChange={(e) =>
+                      setCustomCharacter({
+                        ...customCharacter,
+                        description: e.target.value,
+                      })
+                    }
                     required
                     className="w-full px-3 py-2 rounded-md border border-input bg-background min-h-[80px]"
                   />
@@ -482,27 +579,43 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="character-mood" className="block text-sm font-medium mb-1">
+                    <label
+                      htmlFor="character-mood"
+                      className="block text-sm font-medium mb-1"
+                    >
                       Mood
                     </label>
                     <input
                       id="character-mood"
                       type="text"
                       value={customCharacter.mood}
-                      onChange={(e) => setCustomCharacter({...customCharacter, mood: e.target.value})}
+                      onChange={(e) =>
+                        setCustomCharacter({
+                          ...customCharacter,
+                          mood: e.target.value,
+                        })
+                      }
                       required
                       className="w-full px-3 py-2 rounded-md border border-input bg-background"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="character-type" className="block text-sm font-medium mb-1">
+                    <label
+                      htmlFor="character-type"
+                      className="block text-sm font-medium mb-1"
+                    >
                       Type
                     </label>
                     <select
                       id="character-type"
                       value={customCharacter.type}
-                      onChange={(e) => setCustomCharacter({...customCharacter, type: e.target.value})}
+                      onChange={(e) =>
+                        setCustomCharacter({
+                          ...customCharacter,
+                          type: e.target.value,
+                        })
+                      }
                       className="w-full px-3 py-2 rounded-md border border-input bg-background"
                     >
                       <option value="fantasy">Fantasy</option>
@@ -514,26 +627,42 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
                 </div>
 
                 <div>
-                  <label htmlFor="character-opening-line" className="block text-sm font-medium mb-1">
+                  <label
+                    htmlFor="character-opening-line"
+                    className="block text-sm font-medium mb-1"
+                  >
                     Opening Line
                   </label>
                   <textarea
                     id="character-opening-line"
                     value={customCharacter.opening_line}
-                    onChange={(e) => setCustomCharacter({...customCharacter, opening_line: e.target.value})}
+                    onChange={(e) =>
+                      setCustomCharacter({
+                        ...customCharacter,
+                        opening_line: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 rounded-md border border-input bg-background min-h-[80px]"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="character-avatar" className="block text-sm font-medium mb-1">
+                  <label
+                    htmlFor="character-avatar"
+                    className="block text-sm font-medium mb-1"
+                  >
                     Avatar URL (Optional)
                   </label>
                   <input
                     id="character-avatar"
                     type="url"
                     value={customCharacter.avatar}
-                    onChange={(e) => setCustomCharacter({...customCharacter, avatar: e.target.value})}
+                    onChange={(e) =>
+                      setCustomCharacter({
+                        ...customCharacter,
+                        avatar: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 rounded-md border border-input bg-background"
                   />
 
@@ -545,7 +674,8 @@ const ScenarioGenerator = ({ onCreateScenario }) => {
                         className="w-16 h-16 rounded-full object-cover"
                         onError={(e) => {
                           e.target.onerror = null;
-                          e.target.src = 'https://placehold.co/200x200?text=Invalid+URL';
+                          e.target.src =
+                            "https://placehold.co/200x200?text=Invalid+URL";
                         }}
                       />
                     </div>

@@ -669,18 +669,74 @@ const ScenarioSelectionStep = ({ selectedCharacters, onBack, onContinue }) => {
                     {customPrompt.length} characters
                   </div>
                 </div>
+
+                <div className="mb-3 p-3 border border-primary/20 rounded-md bg-primary/5">
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span>Enhanced Scene Creation</span>
+                  </h4>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    For more immersive AI responses, include rich details about:
+                  </p>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs mb-2">
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-primary font-bold">•</span>
+                      <span>
+                        <strong>Setting:</strong> Specific location, time of
+                        day, weather
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-primary font-bold">•</span>
+                      <span>
+                        <strong>Sensory details:</strong> Sights, sounds,
+                        smells, textures
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-primary font-bold">•</span>
+                      <span>
+                        <strong>Social dynamics:</strong> Power relationships,
+                        hierarchies
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-primary font-bold">•</span>
+                      <span>
+                        <strong>Character motivations:</strong> Desires, fears,
+                        secrets
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-primary font-bold">•</span>
+                      <span>
+                        <strong>Emotional atmosphere:</strong> Mood, tensions,
+                        undercurrents
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-primary font-bold">•</span>
+                      <span>
+                        <strong>Potential interactions:</strong> Flirting,
+                        arguing, negotiating
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+
                 <textarea
                   value={customPrompt}
                   onChange={(e) => setCustomPrompt(e.target.value)}
-                  placeholder="Describe your scenario in rich detail. Include:
-• Environmental Details: Describe the weather, time of day, and sensory elements (sights, sounds, smells)
-• Emotional Atmosphere: What's the mood? (tense, peaceful, mysterious) How does it feel to be there?
-• Character Relationships: What's their history? What unspoken dynamics exist between them?
-• Character Motivations: What does each character want? What are they hiding or afraid of?
-• Rising Tensions: What conflicts are brewing? How are tensions escalating?
-• Stakes: What will happen if they fail? Why does this matter to the characters?
-• Sensory Details: What can they see, hear, smell, or feel in this environment?"
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background min-h-[200px] text-sm"
+                  placeholder="Describe your scenario in rich detail. Example:
+
+In the bustling market district of King's Landing during a warm afternoon, the air filled with spices and sea salt. As a respected maester with your loyal direwolf companion, you navigate the crowded streets where nobles and commoners alike regard you with a mixture of reverence and suspicion.
+
+The tension between Lannister and Stark supporters is palpable, with whispered conversations falling silent as you pass. Your goal is to deliver an important message to a mysterious contact, but you sense you're being followed.
+
+Several attractive nobles have caught your eye, including a Tyrell lady in an elegant green dress who keeps glancing your way with interest, and a charming Dornish merchant whose flirtatious smile suggests they might know more than they let on.
+
+The air feels charged with both political intrigue and romantic possibility. Your direwolf seems unusually alert, sensing something - or someone - that you cannot yet perceive."
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background min-h-[250px] text-sm"
                 />
               </div>
 

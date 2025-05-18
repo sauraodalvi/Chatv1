@@ -6584,46 +6584,55 @@ const renderChatRoom = () => {
             </button>
           </div>
 
-          {/* Action menu (conditionally rendered) */}
+          {/* Action menu (conditionally rendered) - optimized for mobile */}
           {showActionMenu && (
-            <div className="mb-4 p-3 border rounded-md bg-background/80">
-              <h3 className="text-sm font-medium mb-2">Character Actions</h3>
-              <div className="flex flex-wrap gap-2 mb-3">
+            <div className="mb-4 p-2 sm:p-3 border rounded-md bg-background/95 backdrop-blur-sm shadow-md fixed bottom-16 sm:bottom-20 left-2 right-2 sm:left-auto sm:right-auto sm:relative z-20">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium">Character Actions</h3>
+                <button
+                  onClick={() => setShowActionMenu(false)}
+                  className="p-1 rounded-full hover:bg-secondary/50 active:bg-secondary/70 touch-action-manipulation"
+                  aria-label="Close actions panel"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3">
                 <button
                   onClick={() => handleCharacterAction("smile")}
-                  className="px-3 py-1 text-sm rounded-full bg-secondary hover:bg-secondary/80"
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full bg-secondary hover:bg-secondary/80 active:bg-secondary/70 touch-action-manipulation"
                 >
                   Smile
                 </button>
                 <button
                   onClick={() => handleCharacterAction("laugh")}
-                  className="px-3 py-1 text-sm rounded-full bg-secondary hover:bg-secondary/80"
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full bg-secondary hover:bg-secondary/80 active:bg-secondary/70 touch-action-manipulation"
                 >
                   Laugh
                 </button>
                 <button
                   onClick={() => handleCharacterAction("frown")}
-                  className="px-3 py-1 text-sm rounded-full bg-secondary hover:bg-secondary/80"
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full bg-secondary hover:bg-secondary/80 active:bg-secondary/70 touch-action-manipulation"
                 >
                   Frown
                 </button>
                 <button
                   onClick={() => handleCharacterAction("nod")}
-                  className="px-3 py-1 text-sm rounded-full bg-secondary hover:bg-secondary/80"
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full bg-secondary hover:bg-secondary/80 active:bg-secondary/70 touch-action-manipulation"
                 >
                   Nod
                 </button>
                 <button
                   onClick={() => handleCharacterAction("sigh")}
-                  className="px-3 py-1 text-sm rounded-full bg-secondary hover:bg-secondary/80"
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full bg-secondary hover:bg-secondary/80 active:bg-secondary/70 touch-action-manipulation"
                 >
                   Sigh
                 </button>
                 <button
                   onClick={() => handleCharacterAction("custom")}
-                  className="px-3 py-1 text-sm rounded-full bg-primary/20 hover:bg-primary/30"
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full bg-primary/20 hover:bg-primary/30 active:bg-primary/40 touch-action-manipulation"
                 >
-                  Custom Action...
+                  Custom...
                 </button>
               </div>
 
@@ -6634,11 +6643,12 @@ const renderChatRoom = () => {
                     value={currentAction === "custom" ? "" : currentAction}
                     onChange={(e) => setCurrentAction(e.target.value)}
                     placeholder="Describe the action (e.g., draws sword)"
-                    className="flex-1 px-3 py-1 text-sm rounded-md border border-input bg-background"
+                    className="flex-1 px-3 py-1.5 text-xs sm:text-sm rounded-md border border-input bg-background"
+                    autoFocus
                   />
                   <button
                     onClick={handleCustomAction}
-                    className="px-3 py-1 text-sm rounded-md bg-primary text-primary-foreground"
+                    className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 touch-action-manipulation"
                   >
                     Add
                   </button>
@@ -6647,24 +6657,40 @@ const renderChatRoom = () => {
             </div>
           )}
 
-          {/* Narration input (conditionally rendered) */}
+          {/* Narration input (conditionally rendered) - optimized for mobile */}
           {showNarrationInput && (
-            <div className="mb-4 p-3 border rounded-md bg-background/80">
-              <h3 className="text-sm font-medium mb-2">Add Narration</h3>
+            <div className="mb-4 p-2 sm:p-3 border rounded-md bg-background/95 backdrop-blur-sm shadow-md fixed bottom-16 sm:bottom-20 left-2 right-2 sm:left-auto sm:right-auto sm:relative z-20">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium">Add Narration</h3>
+                <button
+                  onClick={() => setShowNarrationInput(false)}
+                  className="p-1 rounded-full hover:bg-secondary/50 active:bg-secondary/70 touch-action-manipulation"
+                  aria-label="Close narration panel"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
               <div className="flex gap-2">
                 <textarea
                   value={narrationText}
                   onChange={(e) => setNarrationText(e.target.value)}
                   placeholder="Describe what's happening in the scene..."
-                  className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background min-h-[80px]"
+                  className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background min-h-[80px] max-h-[150px] sm:max-h-none"
                   rows={3}
+                  autoFocus
                 />
               </div>
-              <div className="flex justify-end mt-2">
+              <div className="flex justify-between mt-2">
+                <button
+                  onClick={() => setShowNarrationInput(false)}
+                  className="px-3 py-1 text-xs sm:text-sm rounded-md border border-input hover:bg-secondary/50 active:bg-secondary/70 touch-action-manipulation"
+                >
+                  Cancel
+                </button>
                 <button
                   onClick={handleNarrationSubmit}
                   disabled={!narrationText.trim()}
-                  className="px-3 py-1 text-sm rounded-md bg-primary text-primary-foreground disabled:opacity-50"
+                  className="px-3 py-1 text-xs sm:text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 disabled:opacity-50 touch-action-manipulation"
                 >
                   Add Narration
                 </button>
@@ -6672,13 +6698,22 @@ const renderChatRoom = () => {
             </div>
           )}
 
-          {/* AI Writing Instructions (conditionally rendered) */}
+          {/* AI Writing Instructions (conditionally rendered) - optimized for mobile */}
           {showWritingInstructions && (
-            <div className="mb-4 p-3 border rounded-md bg-background/80">
-              <h3 className="text-sm font-medium mb-2 flex items-center">
-                <PenTool className="h-4 w-4 mr-1 text-primary" />
-                AI Writing Instructions
-              </h3>
+            <div className="mb-4 p-2 sm:p-3 border rounded-md bg-background/95 backdrop-blur-sm shadow-md fixed bottom-16 sm:bottom-20 left-2 right-2 sm:left-auto sm:right-auto sm:relative z-20 max-h-[70vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-2 sticky top-0 bg-background/95 backdrop-blur-sm pt-1 pb-2 z-10">
+                <h3 className="text-sm font-medium flex items-center">
+                  <PenTool className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 text-primary" />
+                  AI Writing Instructions
+                </h3>
+                <button
+                  onClick={() => setShowWritingInstructions(false)}
+                  className="p-1 rounded-full hover:bg-secondary/50 active:bg-secondary/70 touch-action-manipulation"
+                  aria-label="Close writing instructions panel"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
               <div className="space-y-3">
                 {/* Story Arc */}
@@ -6696,7 +6731,7 @@ const renderChatRoom = () => {
                       )
                     }
                     placeholder="e.g., 'Mystery with a twist ending' or 'Romantic comedy'"
-                    className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background"
+                    className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded-md border border-input bg-background"
                   />
                 </div>
 
@@ -6713,7 +6748,7 @@ const renderChatRoom = () => {
                         e.target.value
                       )
                     }
-                    className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background"
+                    className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded-md border border-input bg-background"
                   >
                     <option value="formal">Formal & Literary</option>
                     <option value="balanced">Balanced & Natural</option>
@@ -6729,7 +6764,7 @@ const renderChatRoom = () => {
                   <label className="block text-xs font-medium mb-1">
                     Response Length
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2">
                     <button
                       onClick={() =>
                         handleWritingInstructionsChange(
@@ -6737,10 +6772,10 @@ const renderChatRoom = () => {
                           "short"
                         )
                       }
-                      className={`flex-1 px-3 py-1 text-sm rounded-md border ${
+                      className={`flex-1 px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md border touch-action-manipulation ${
                         writingInstructions.responseLength === "short"
                           ? "bg-primary text-primary-foreground"
-                          : "bg-background"
+                          : "bg-background hover:bg-secondary/30 active:bg-secondary/50"
                       }`}
                     >
                       Short
@@ -6752,10 +6787,10 @@ const renderChatRoom = () => {
                           "medium"
                         )
                       }
-                      className={`flex-1 px-3 py-1 text-sm rounded-md border ${
+                      className={`flex-1 px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md border touch-action-manipulation ${
                         writingInstructions.responseLength === "medium"
                           ? "bg-primary text-primary-foreground"
-                          : "bg-background"
+                          : "bg-background hover:bg-secondary/30 active:bg-secondary/50"
                       }`}
                     >
                       Medium
@@ -6767,10 +6802,10 @@ const renderChatRoom = () => {
                           "long"
                         )
                       }
-                      className={`flex-1 px-3 py-1 text-sm rounded-md border ${
+                      className={`flex-1 px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md border touch-action-manipulation ${
                         writingInstructions.responseLength === "long"
                           ? "bg-primary text-primary-foreground"
-                          : "bg-background"
+                          : "bg-background hover:bg-secondary/30 active:bg-secondary/50"
                       }`}
                     >
                       Long
@@ -6792,7 +6827,7 @@ const renderChatRoom = () => {
                       )
                     }
                     placeholder="e.g., 'Remember that Nova is hiding a secret' or 'Thaddeus should mention his time machine'"
-                    className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background min-h-[60px]"
+                    className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded-md border border-input bg-background min-h-[60px] max-h-[120px] sm:max-h-none"
                     rows={2}
                   />
                 </div>
@@ -6811,52 +6846,60 @@ const renderChatRoom = () => {
                       )
                     }
                     placeholder="Any other instructions for the AI..."
-                    className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background min-h-[60px]"
+                    className="w-full px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded-md border border-input bg-background min-h-[60px] max-h-[120px] sm:max-h-none"
                     rows={2}
                   />
                 </div>
 
-                <div className="flex justify-end mt-2">
+                <div className="flex justify-between mt-2">
                   <button
                     onClick={() => setShowWritingInstructions(false)}
-                    className="px-3 py-1 text-sm rounded-md bg-primary text-primary-foreground"
+                    className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md border border-input hover:bg-secondary/50 active:bg-secondary/70 touch-action-manipulation"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => setShowWritingInstructions(false)}
+                    className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 touch-action-manipulation"
                   >
                     Save Instructions
                   </button>
                 </div>
               </div>
 
-              <div className="mt-2 text-xs text-muted-foreground">
+              <div className="mt-2 text-[10px] sm:text-xs text-muted-foreground">
                 These instructions will guide how AI characters respond in the
                 conversation.
               </div>
             </div>
           )}
 
-          {/* Sensory Panel (conditionally rendered) */}
+          {/* Sensory Panel (conditionally rendered) - optimized for mobile */}
           {showSensoryPanel && (
-            <div className="mb-4 p-3 border rounded-md bg-background/80 backdrop-blur-sm shadow-md transition-all duration-300 ease-in-out">
-              <div className="flex justify-between items-center mb-3">
+            <div className="mb-4 p-2 sm:p-3 border rounded-md bg-background/95 backdrop-blur-sm shadow-md fixed bottom-16 sm:bottom-20 left-2 right-2 sm:left-auto sm:right-auto sm:relative z-20 max-h-[70vh] overflow-y-auto transition-all duration-300 ease-in-out">
+              <div className="flex justify-between items-center mb-2 sticky top-0 bg-background/95 backdrop-blur-sm pt-1 pb-2 z-10">
                 <h3 className="text-sm font-medium flex items-center">
-                  <Sparkle className="h-4 w-4 mr-1 text-purple-500" />
+                  <Sparkle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 text-purple-500" />
                   Scene Sensory Details
                 </h3>
                 <button
                   onClick={() => setShowSensoryPanel(false)}
-                  className="p-1 rounded-full hover:bg-secondary/50 transition-colors"
+                  className="p-1 rounded-full hover:bg-secondary/50 active:bg-secondary/70 transition-colors touch-action-manipulation"
                   title="Close panel"
+                  aria-label="Close sensory panel"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
               {/* Sensory details as chips */}
-              <div className="flex flex-wrap gap-2 mb-3">
+              <div className="flex flex-wrap gap-1 sm:gap-2 mb-3">
                 {/* Narrative phase and tension chips */}
                 <Chip
                   variant="default"
                   size="sm"
-                  icon={<Zap className="h-3.5 w-3.5" />}
+                  icon={<Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                  className="text-[10px] sm:text-xs"
                 >
                   <span className="capitalize">{narrativePhase}</span>
                 </Chip>
@@ -6864,24 +6907,26 @@ const renderChatRoom = () => {
                 <Chip
                   variant="default"
                   size="sm"
-                  icon={<Flame className="h-3.5 w-3.5" />}
+                  icon={<Flame className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                  className="text-[10px] sm:text-xs"
                 >
                   Tension: {storyTension}/10
                 </Chip>
               </div>
 
               {/* Sensory details */}
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {sensoryDescriptions.sight && (
                   <div className="space-y-1">
                     <Chip
                       variant="sight"
                       size="sm"
-                      icon={<Sparkles className="h-3.5 w-3.5" />}
+                      icon={<Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                      className="text-[10px] sm:text-xs"
                     >
                       Sight
                     </Chip>
-                    <p className="text-sm pl-2 border-l-2 border-amber-500/30">
+                    <p className="text-xs sm:text-sm pl-2 border-l-2 border-amber-500/30">
                       {sensoryDescriptions.sight}
                     </p>
                   </div>
@@ -6892,11 +6937,12 @@ const renderChatRoom = () => {
                     <Chip
                       variant="sound"
                       size="sm"
-                      icon={<Wind className="h-3.5 w-3.5" />}
+                      icon={<Wind className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                      className="text-[10px] sm:text-xs"
                     >
                       Sound
                     </Chip>
-                    <p className="text-sm pl-2 border-l-2 border-blue-500/30">
+                    <p className="text-xs sm:text-sm pl-2 border-l-2 border-blue-500/30">
                       {sensoryDescriptions.sound}
                     </p>
                   </div>
@@ -6907,11 +6953,12 @@ const renderChatRoom = () => {
                     <Chip
                       variant="smell"
                       size="sm"
-                      icon={<Leaf className="h-3.5 w-3.5" />}
+                      icon={<Leaf className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                      className="text-[10px] sm:text-xs"
                     >
                       Smell
                     </Chip>
-                    <p className="text-sm pl-2 border-l-2 border-green-500/30">
+                    <p className="text-xs sm:text-sm pl-2 border-l-2 border-green-500/30">
                       {sensoryDescriptions.smell}
                     </p>
                   </div>
@@ -6922,11 +6969,12 @@ const renderChatRoom = () => {
                     <Chip
                       variant="touch"
                       size="sm"
-                      icon={<Flame className="h-3.5 w-3.5" />}
+                      icon={<Flame className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                      className="text-[10px] sm:text-xs"
                     >
                       Touch
                     </Chip>
-                    <p className="text-sm pl-2 border-l-2 border-red-500/30">
+                    <p className="text-xs sm:text-sm pl-2 border-l-2 border-red-500/30">
                       {sensoryDescriptions.touch}
                     </p>
                   </div>
@@ -6939,16 +6987,17 @@ const renderChatRoom = () => {
                     variant="default"
                     size="sm"
                     onClick={() => setShowSensoryPanel(false)}
+                    className="text-[10px] sm:text-xs py-0.5 px-2 sm:py-1 sm:px-2.5 touch-action-manipulation"
                   >
                     Close
                   </Chip>
                 </div>
-                <div className="text-xs text-muted-foreground flex items-center gap-1 flex-wrap justify-center">
-                  <kbd className="px-1.5 py-0.5 bg-secondary/50 rounded text-[10px] font-mono">
+                <div className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1 flex-wrap justify-center">
+                  <kbd className="px-1 sm:px-1.5 py-0.5 bg-secondary/50 rounded text-[8px] sm:text-[10px] font-mono">
                     Alt+S
                   </kbd>
                   <span>to toggle this panel •</span>
-                  <kbd className="px-1.5 py-0.5 bg-secondary/50 rounded text-[10px] font-mono">
+                  <kbd className="px-1 sm:px-1.5 py-0.5 bg-secondary/50 rounded text-[8px] sm:text-[10px] font-mono">
                     Esc
                   </kbd>
                   <span>to close</span>
@@ -6957,23 +7006,24 @@ const renderChatRoom = () => {
             </div>
           )}
 
-          {/* What happens next options (conditionally rendered) */}
+          {/* What happens next options (conditionally rendered) - optimized for mobile */}
           {showNextOptions && (
-            <div className="mb-4 p-3 border rounded-md bg-background/80 backdrop-blur-sm shadow-md transition-all duration-300 ease-in-out">
-              <div className="flex justify-between items-center mb-2">
+            <div className="mb-4 p-2 sm:p-3 border rounded-md bg-background/95 backdrop-blur-sm shadow-md fixed bottom-16 sm:bottom-20 left-2 right-2 sm:left-auto sm:right-auto sm:relative z-20 max-h-[60vh] overflow-y-auto transition-all duration-300 ease-in-out">
+              <div className="flex justify-between items-center mb-2 sticky top-0 bg-background/95 backdrop-blur-sm pt-1 pb-2 z-10">
                 <h3 className="text-sm font-medium flex items-center">
-                  <Lightbulb className="h-4 w-4 mr-1 text-amber-500" />
+                  <Lightbulb className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 text-amber-500" />
                   What happens next?
                 </h3>
                 <button
                   onClick={() => setShowNextOptions(false)}
-                  className="p-1 rounded-full hover:bg-secondary/50 transition-colors"
+                  className="p-1 rounded-full hover:bg-secondary/50 active:bg-secondary/70 transition-colors touch-action-manipulation"
                   title="Close panel"
+                  aria-label="Close options panel"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="space-y-2 mb-3">
+              <div className="space-y-1 sm:space-y-2 mb-3">
                 {nextOptions.map((option, index) => {
                   // Check if this is a battle option
                   const isBattleOption =
@@ -7029,15 +7079,19 @@ const renderChatRoom = () => {
                           : "default"
                       }
                       size="md"
-                      icon={<OptionIcon className={`h-4 w-4 ${iconColor}`} />}
+                      icon={
+                        <OptionIcon
+                          className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${iconColor}`}
+                        />
+                      }
                       endIcon={
                         battleOption && battleOption.focusCharacter ? (
-                          <span className="text-xs px-2 py-0.5 bg-secondary/50 rounded-full">
+                          <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 bg-secondary/50 rounded-full">
                             {battleOption.focusCharacter}
                           </span>
                         ) : null
                       }
-                      className="w-full justify-start mb-2"
+                      className="w-full justify-start mb-2 text-xs sm:text-sm py-1.5 sm:py-2 touch-action-manipulation"
                     >
                       <span className="text-left">{option}</span>
                     </Chip>
@@ -7050,27 +7104,27 @@ const renderChatRoom = () => {
                   value={customNextOption}
                   onChange={(e) => setCustomNextOption(e.target.value)}
                   placeholder="Or write your own plot development..."
-                  className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background"
+                  className="flex-1 px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded-md border border-input bg-background"
                 />
                 <button
                   onClick={applyCustomNextOption}
                   disabled={!customNextOption.trim()}
-                  className="px-3 py-1 text-sm rounded-md bg-primary text-primary-foreground disabled:opacity-50"
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 disabled:opacity-50 touch-action-manipulation whitespace-nowrap"
                 >
                   Apply
                 </button>
               </div>
-              <div className="mt-2 text-xs text-muted-foreground">
+              <div className="mt-2 text-[10px] sm:text-xs text-muted-foreground">
                 <div>
                   These suggestions will be added as narration and characters
                   will respond to them.
                 </div>
                 <div className="mt-1 flex items-center gap-1 flex-wrap">
-                  <kbd className="px-1.5 py-0.5 bg-secondary/50 rounded text-[10px] font-mono">
+                  <kbd className="px-1 sm:px-1.5 py-0.5 bg-secondary/50 rounded text-[8px] sm:text-[10px] font-mono">
                     Alt+W
                   </kbd>
                   <span>to toggle this panel •</span>
-                  <kbd className="px-1.5 py-0.5 bg-secondary/50 rounded text-[10px] font-mono">
+                  <kbd className="px-1 sm:px-1.5 py-0.5 bg-secondary/50 rounded text-[8px] sm:text-[10px] font-mono">
                     Esc
                   </kbd>
                   <span>to close</span>
@@ -7137,10 +7191,10 @@ const renderChatRoom = () => {
 
               <div
                 id="character-select-dropdown"
-                className="absolute left-0 bottom-full mb-2 w-[280px] bg-background/95 backdrop-blur-sm border border-input rounded-lg shadow-lg z-10 hidden"
+                className="absolute left-0 bottom-full mb-2 w-[250px] sm:w-[280px] bg-background/95 backdrop-blur-sm border border-input rounded-lg shadow-lg z-10 hidden max-h-[60vh] overflow-y-auto"
               >
-                <div className="p-3 max-h-[400px] overflow-y-auto">
-                  <div className="flex justify-between items-center mb-2">
+                <div className="p-2 sm:p-3 overflow-y-auto">
+                  <div className="flex justify-between items-center mb-2 sticky top-0 bg-background/95 backdrop-blur-sm pt-1 pb-2 z-10">
                     <h4 className="text-sm font-medium">
                       Choose Your Character
                     </h4>
@@ -7169,7 +7223,7 @@ const renderChatRoom = () => {
                           .getElementById("character-select-dropdown")
                           .classList.add("hidden");
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-accent rounded-md ${
+                      className={`w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2.5 text-left hover:bg-accent active:bg-accent/80 rounded-md touch-action-manipulation ${
                         activeCharacter?.name === "Yourself"
                           ? "bg-primary/10 border border-primary/30"
                           : "border border-border"
@@ -7218,7 +7272,7 @@ const renderChatRoom = () => {
                                 .getElementById("character-select-dropdown")
                                 .classList.add("hidden");
                             }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-accent rounded-md ${
+                            className={`w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 text-left hover:bg-accent active:bg-accent/80 rounded-md touch-action-manipulation ${
                               activeCharacter?.id === char.id
                                 ? "bg-primary/10 border border-primary/30"
                                 : "border border-border"
@@ -7282,7 +7336,7 @@ const renderChatRoom = () => {
                           .classList.add("hidden");
                         setShowUserCharacterManager(true);
                       }}
-                      className="w-full flex items-center justify-center gap-2 p-2 rounded-md border border-dashed border-primary/50 hover:border-primary hover:bg-primary/5 transition-all"
+                      className="w-full flex items-center justify-center gap-2 p-2 rounded-md border border-dashed border-primary/50 hover:border-primary active:bg-primary/10 hover:bg-primary/5 transition-all touch-action-manipulation"
                     >
                       <Plus className="h-4 w-4 text-primary" />
                       <span className="text-sm text-primary">
@@ -7305,7 +7359,7 @@ const renderChatRoom = () => {
                             .getElementById("character-select-dropdown")
                             .classList.add("hidden");
                         }}
-                        className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-accent rounded-md ${
+                        className={`w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 text-left hover:bg-accent active:bg-accent/80 rounded-md touch-action-manipulation ${
                           activeCharacter?.name === char.name
                             ? "bg-primary/10 border border-primary/30"
                             : "border border-border"
@@ -7426,7 +7480,7 @@ const renderChatRoom = () => {
                     id="character-turn-dropdown"
                     className="absolute bottom-full right-0 mb-2 bg-background/95 backdrop-blur-sm border border-input rounded-md shadow-lg p-2 sm:p-3 hidden z-10 min-w-[200px] sm:min-w-[250px] max-h-[300px] overflow-y-auto"
                   >
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex justify-between items-center mb-2 sticky top-0 bg-background/95 backdrop-blur-sm pt-1 pb-2 z-10">
                       <h4 className="text-sm font-medium">AI Auto-Response</h4>
                       <button
                         onClick={() => {
@@ -7489,7 +7543,7 @@ const renderChatRoom = () => {
                         chatRoom.characters.map((char) => (
                           <button
                             key={`turn-${char.name}`}
-                            className="w-full text-left px-3 py-2 text-xs rounded-md hover:bg-secondary/30 flex items-center gap-3 transition-colors border border-border"
+                            className="w-full text-left px-2 sm:px-3 py-2 text-xs rounded-md hover:bg-secondary/30 active:bg-secondary/50 flex items-center gap-2 sm:gap-3 transition-colors border border-border touch-action-manipulation"
                             onClick={(e) => {
                               e.stopPropagation(); // Prevent event bubbling
 
